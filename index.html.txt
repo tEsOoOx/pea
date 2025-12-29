@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Stratège PEA Pro - Export Manuel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f8fafc; 
+            color: #1e293b; 
+            font-size: 0.85rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            border: 1px solid #f1f5f9; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); 
+        }
+
+        .input-field { 
+            background: #f1f5f9; 
+            border-radius: 8px; 
+            padding: 0.4rem 0.6rem; 
+            font-weight: 700; 
+            border: 2px solid transparent; 
+            transition: all 0.2s; 
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .input-field:focus { 
+            border-color: #6366f1; 
+            background: white; 
+            outline: none; 
+        }
+
+        .custom-select { 
+            appearance: none; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
+            background-repeat: no-repeat; 
+            background-position: right 0.5rem center; 
+            background-size: 1em; 
+        }
+
+        .stat-label { 
+            text-transform: uppercase; 
+            font-size: 0.6rem; 
+            font-weight: 800; 
+            color: #94a3b8; 
+            letter-spacing: 0.05em; 
+        }
+
+        .btn-tab { padding: 0.5rem 1rem; font-weight: 700; font-size: 0.75rem; border-radius: 8px; transition: all 0.2s; }
+        .btn-tab.active { background: #6366f1; color: white; }
+        
+        .save-indicator { font-size: 9px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.3s; }
+        .save-indicator.visible { opacity: 1; }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        /* Styles pour les modes de calcul */
+        .mode-toggle {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+        }
+        .mode-btn {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            transition: all 0.2s;
+        }
+        .mode-btn.active {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .mode-btn.inactive {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8 pb-24">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-xl font-800 tracking-tight text-slate-900">Stratège PEA Pro</h1>
+                <div id="saveIndicator" class="save-indicator">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    AUTO-SAUVEGARDE ACTIVE
+                </div>
+            </div>
+            
+            <div class="flex gap-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+                <button onclick="toggleTab('main')" id="tab-main" class="btn-tab active">SIMULATEUR</button>
+                <button onclick="toggleTab('config')" id="tab-config" class="btn-tab text-slate-400">GESTION</button>
+            </div>
+
+            <div class="mode-toggle">
+                <button id="btnBrut" onclick="setMode(false)" class="mode-btn active">BRUT</button>
+                <button id="btnNet" onclick="setMode(true)" class="mode-btn inactive">NET (17.2%)</button>
+            </div>
+        </header>
+
+        <!-- Barre d'actions -->
+        <div class="flex flex-wrap gap-3 mb-6">
+            <button onclick="copierRapport()" class="btn-action bg-emerald-600 text-white hover:bg-emerald-700 shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                COPIER LE RAPPORT
+            </button>
+            <button onclick="exportToFile()" class="btn-action bg-slate-800 text-white hover:bg-slate-900 shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                ENREGISTRER SOUS...
+            </button>
+        </div>
+
+        <div id="view-config" class="hidden animate-in fade-in duration-300">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <div class="card p-6 text-center space-y-4">
+                    <h2 class="text-lg font-800">Charger un fichier</h2>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Importer une stratégie existante</p>
+                    <input type="file" id="importFile" onchange="importFromFile(event)" class="text-xs w-full p-2 border rounded-lg"/>
+                </div>
+                <div class="card p-6 border-red-100 bg-red-50/30 text-center flex flex-col justify-center">
+                    <button onclick="resetConfiguration()" class="px-6 py-2 border-2 border-red-200 text-red-500 rounded-lg font-bold text-[10px]">TOUT EFFACER</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-main" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-indigo-500">
+                    <div class="space-y-1 text-center">
+                        <label class="stat-label">Âge actuel</label>
+                        <input type="number" id="ageActuel" value="30" oninput="handleParamChange()" class="input-field w-full">
+                    </div>
+                    <div class="space-y-1 text-center">
+                        <label class="stat-label">Capital initial (€)</label>
+                        <input type="number" id="capitalInitial" value="5000" oninput="handleParamChange()" class="input-field w-full text-indigo-600">
+                    </div>
+                </div>
+
+                <div id="phasesConteneur" class="space-y-6"></div>
+
+                <button onclick="ajouterPhase()" class="w-full py-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-[11px] border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition-all tracking-widest">
+                    + CLONER LA DERNIÈRE PHASE
+                </button>
+
+                <!-- Tableau de bord résultats -->
+                <div class="card p-5 bg-white border-t-4 border-slate-900 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+                    <div><p class="stat-label">Total Investi</p><p id="bilanInvesti" class="font-800 text-slate-700">-</p></div>
+                    <div><p class="stat-label">Valeur Finale</p><p id="bilanCapital" class="font-800 text-indigo-600">-</p></div>
+                    <div><p class="stat-label">Plus-value</p><p id="bilanGain" class="font-800 text-emerald-500">-</p></div>
+                    <div><p class="stat-label">Multiplicateur</p><p id="bilanMult" class="font-800 text-amber-500">-</p></div>
+                    <div><p class="stat-label">Part Intérêts</p><p id="bilanPart" class="font-800 text-blue-500">-</p></div>
+                    <div><p class="stat-label">Âge Final</p><p id="bilanAge" class="font-800 text-slate-400">-</p></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5">
+                <div class="sticky top-6 space-y-6">
+                    <div class="card p-6 bg-indigo-50 border-indigo-100 text-center shadow-lg">
+                        <p class="stat-label text-indigo-400 mb-1">Projection Finale</p>
+                        <h2 id="totalFinal" class="text-3xl font-800 text-indigo-900 tracking-tighter">0 €</h2>
+                        <div id="gainFinal" class="mt-2 inline-block px-3 py-1 bg-white rounded-lg text-[10px] font-bold text-emerald-600">+ 0 €</div>
+                    </div>
+                    <div class="card p-4 space-y-6">
+                        <div class="h-56 w-full"><canvas id="chartLine"></canvas></div>
+                        <div class="h-72 w-full"><canvas id="chartPie"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LISTE_ACTIFS = [
+            { nom: "iShares MSCI World Swap PEA", rendement: 12.8 },
+            { nom: "ETF S&P 500 (PEA)", rendement: 13.6 },
+            { nom: "BNP Easy STOXX Europe 600", rendement: 10.4 },
+            { nom: "Amundi PEA Asie Emergente", rendement: 5.8 },
+            { nom: "Inpost", rendement: 18.2 },
+            { nom: "Air Liquide", rendement: 12.4 },
+            { nom: "Schneider Electric", rendement: 16.7 },
+            { nom: "ASML", rendement: 22.1 },
+            { nom: "Hermès (RMS)", rendement: 24.5 },
+            { nom: "LVMH", rendement: 14.8 },
+            { nom: "TotalEnergies", rendement: 11.2 },
+            { nom: "Personnalisé", rendement: 7 }
+        ];
+
+        let phases = [{
+            id: 1, nom: "Phase 1", duree: 20, budget: 1000,
+            poches: [
+                { id: 11, nom: "Poche ETF", pct: 70, investissements: [{ id: 111, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
+                { id: 12, nom: "Poche Actions", pct: 30, investissements: [{ id: 121, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
+            ]
+        }];
+
+        let modeNet = false;
+        let lineChart, pieChart;
+        let saveTimeout;
+
+        function parseNum(val) {
+            let n = parseFloat(String(val).replace(',', '.'));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function formatEuros(v) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
+        }
+
+        function handleParamChange() {
+            updateLiveAmounts();
+            calculer();
+            scheduleSave();
+        }
+
+        function scheduleSave() {
+            const el = document.getElementById('saveIndicator');
+            if (el) el.classList.add('visible');
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                const config = {
+                    age: document.getElementById('ageActuel').value,
+                    capital: document.getElementById('capitalInitial').value,
+                    phases: phases,
+                    modeNet: modeNet
+                };
+                localStorage.setItem('pea_v9_store', JSON.stringify(config));
+                if (el) el.classList.remove('visible');
+            }, 1000);
+        }
+
+        function updateLiveAmounts() {
+            phases.forEach(p => {
+                const budget = parseNum(p.budget);
+                p.poches.forEach(poc => {
+                    const bP = budget * (parseNum(poc.pct)/100);
+                    const elPoc = document.getElementById(`eur-poche-${poc.id}`);
+                    if (elPoc) elPoc.innerText = `${Math.round(bP)}€`;
+                    poc.investissements.forEach(inv => {
+                        const valInv = bP * (parseNum(inv.pct)/100);
+                        const elInv = document.getElementById(`eur-inv-${inv.id}`);
+                        if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
+                    });
+                });
+            });
+        }
+
+        function render() {
+            const cont = document.getElementById('phasesConteneur');
+            cont.innerHTML = phases.map(p => {
+                const budget = parseNum(p.budget);
+                return `
+                <div class="card overflow-hidden border-t-4 border-indigo-500 relative">
+                    <button onclick="supprimerPhase(${p.id})" class="absolute top-3 right-3 text-slate-300 font-bold hover:text-red-400">×</button>
+                    <div class="p-3 bg-slate-50 border-b border-slate-100 flex flex-wrap justify-center gap-3">
+                        <input type="text" value="${p.nom}" oninput="updatePhaseData(${p.id}, 'nom', this.value)" class="bg-transparent font-800 text-xs outline-none text-center">
+                        <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
+                            <span class="stat-label">Durée:</span>
+                            <input type="number" value="${p.duree}" oninput="updatePhaseData(${p.id}, 'duree', this.value)" class="w-8 font-bold text-center outline-none">
+                        </div>
+                        <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
+                            <span class="stat-label">Budget:</span>
+                            <input type="number" value="${p.budget}" oninput="updatePhaseData(${p.id}, 'budget', this.value)" class="w-16 font-800 text-indigo-600 outline-none text-center">
+                            <span class="text-[9px] font-bold text-indigo-300">€/m</span>
+                        </div>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${p.poches.map(poc => {
+                            const bP = budget * (parseNum(poc.pct)/100);
+                            return `
+                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                <div class="flex justify-between items-center mb-3">
+                                    <input type="text" value="${poc.nom}" oninput="updatePocheData(${p.id}, ${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
+                                    <div class="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
+                                        <input type="number" value="${poc.pct}" oninput="updatePocheData(${p.id}, ${poc.id}, 'pct', this.value)" class="bg-transparent w-6 text-center font-800 outline-none text-[10px]">
+                                        <span class="text-[8px]">%</span>
+                                        <span id="eur-poche-${poc.id}" class="text-[9px] font-bold border-l border-indigo-200 ml-1 pl-1.5">${Math.round(bP)}€</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    ${poc.investissements.map(inv => {
+                                        const vInv = bP * (parseNum(inv.pct)/100);
+                                        return `
+                                        <div class="bg-white p-2 rounded-lg shadow-sm border border-slate-50 space-y-1.5">
+                                            <div class="flex justify-between">
+                                                <select onchange="updateInvData(${p.id}, ${poc.id}, ${inv.id}, 'nom', this.value)" class="custom-select text-[9px] font-bold outline-none flex-grow">
+                                                    ${LISTE_ACTIFS.map(a => `<option value="${a.nom}" ${inv.nom === a.nom ? 'selected' : ''}>${a.nom}</option>`).join('')}
+                                                </select>
+                                                <button onclick="supprimerActif(${p.id}, ${poc.id}, ${inv.id})" class="text-slate-200 ml-2">×</button>
+                                            </div>
+                                            <div class="flex justify-between items-center text-[9px]">
+                                                <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded">
+                                                    <span class="text-slate-400 font-bold">PART:</span>
+                                                    <input type="number" value="${inv.pct}" oninput="updateInvData(${p.id}, ${poc.id}, ${inv.id}, 'pct', this.value)" class="w-6 text-center font-800 text-indigo-600 bg-transparent outline-none">
+                                                    <span id="eur-inv-${inv.id}" class="text-indigo-900 ml-1">(${Math.round(vInv)}€)</span>
+                                                </div>
+                                                <div class="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                                    <span class="text-emerald-400 font-bold">TAUX:</span>
+                                                    <input type="number" value="${inv.rendement}" oninput="updateInvData(${p.id}, ${poc.id}, ${inv.id}, 'rendement', this.value)" class="w-8 text-center font-800 text-emerald-600 bg-transparent outline-none">
+                                                    <span class="text-emerald-400">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        `;
+                                    }).join('')}
+                                    <button onclick="ajouterActif(${p.id}, ${poc.id})" class="w-full py-1 border border-dashed border-slate-200 rounded text-[8px] font-bold text-slate-400">+ ACTIF</button>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // --- FONCTIONS DE LOGIQUE ---
+
+        function updatePhaseData(id, field, val) {
+            const p = phases.find(x => x.id === id);
+            if (p) { p[field] = val; handleParamChange(); }
+        }
+
+        function updatePocheData(pId, pocId, field, val) {
+            const p = phases.find(x => x.id === pId);
+            if (p) {
+                const poc = p.poches.find(x => x.id === pocId);
+                if (poc) { poc[field] = val; handleParamChange(); }
+            }
+        }
+
+        function updateInvData(pId, pocId, invId, field, val) {
+            const p = phases.find(x => x.id === pId);
+            if (!p) return;
+            const poc = p.poches.find(x => x.id === pocId);
+            if (!poc) return;
+            const inv = poc.investissements.find(x => x.id === invId);
+            if (!inv) return;
+
+            if (field === 'nom') {
+                inv.nom = val;
+                const ref = LISTE_ACTIFS.find(a => a.nom === val);
+                if (ref) inv.rendement = ref.rendement;
+                render();
+            } else {
+                inv[field] = val;
+            }
+            handleParamChange();
+        }
+
+        function ajouterPhase() {
+            const lastPhase = phases[phases.length - 1];
+            const newId = Date.now();
+            const clonedPhase = JSON.parse(JSON.stringify(lastPhase));
+            clonedPhase.id = newId;
+            clonedPhase.nom = `Phase ${phases.length + 1}`;
+            clonedPhase.poches.forEach((poc, i) => {
+                poc.id = newId + (i + 1);
+                poc.investissements.forEach((inv, j) => {
+                    inv.id = newId + 100 + (i * 10) + j;
+                });
+            });
+            phases.push(clonedPhase);
+            render(); 
+            handleParamChange();
+        }
+
+        function supprimerPhase(id) { if (phases.length > 1) { phases = phases.filter(x => x.id !== id); render(); handleParamChange(); } }
+        
+        function ajouterActif(pId, pocId) { 
+            const p = phases.find(x => x.id === pId);
+            if (p) {
+                const poc = p.poches.find(x => x.id === pocId);
+                if (poc) {
+                    poc.investissements.push({ id: Date.now(), nom: "iShares MSCI World Swap PEA", pct: 0, rendement: 12.8 });
+                    render();
+                }
+            }
+        }
+
+        function supprimerActif(pId, pocId, invId) { 
+            const p = phases.find(x => x.id === pId);
+            if (p) {
+                const poc = p.poches.find(x => x.id === pocId);
+                if (poc) {
+                    poc.investissements = poc.investissements.filter(x => x.id !== invId);
+                    render(); handleParamChange();
+                }
+            }
+        }
+
+        function toggleTab(tab) {
+            document.getElementById('view-main').classList.toggle('hidden', tab !== 'main');
+            document.getElementById('view-config').classList.toggle('hidden', tab !== 'config');
+            document.getElementById('tab-main').className = `btn-tab ${tab === 'main' ? 'active' : 'text-slate-400'}`;
+            document.getElementById('tab-config').className = `btn-tab ${tab === 'config' ? 'active' : 'text-slate-400'}`;
+        }
+
+        function setMode(net) { 
+            modeNet = net; 
+            document.getElementById('btnNet').className = `mode-btn ${net ? 'active' : 'inactive'}`;
+            document.getElementById('btnBrut').className = `mode-btn ${!net ? 'active' : 'inactive'}`;
+            handleParamChange(); 
+        }
+
+        function calculer() {
+            let ageAct = parseNum(document.getElementById('ageActuel').value);
+            let capIni = parseNum(document.getElementById('capitalInitial').value);
+            let totalInvesti = capIni;
+            let actifsFinaux = [{ nom: "Initial", valeur: capIni, rendement: 5 }];
+            let dataPoints = [{ age: ageAct, cap: capIni, inv: capIni }];
+
+            let ageCourant = ageAct;
+            phases.forEach(p => {
+                const d = parseNum(p.duree);
+                const b = parseNum(p.budget);
+                for (let a = 1; a <= d; a++) {
+                    ageCourant++;
+                    actifsFinaux.forEach(ac => ac.valeur *= (1 + (parseNum(ac.rendement)/100)));
+                    p.poches.forEach(poc => {
+                        const bP = b * (parseNum(poc.pct)/100);
+                        poc.investissements.forEach(inv => {
+                            const vA = (bP * (parseNum(inv.pct)/100)) * 12;
+                            totalInvesti += vA;
+                            let ex = actifsFinaux.find(x => x.nom === inv.nom);
+                            if (ex) { ex.valeur += vA; ex.rendement = inv.rendement; }
+                            else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
+                        });
+                    });
+                    let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
+                    let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
+                    dataPoints.push({ age: ageCourant, cap: tB - tx, inv: totalInvesti });
+                }
+            });
+
+            const fin = dataPoints[dataPoints.length - 1];
+            document.getElementById('totalFinal').innerText = formatEuros(fin.cap);
+            document.getElementById('gainFinal').innerText = "+ " + formatEuros(fin.cap - fin.inv);
+            document.getElementById('bilanInvesti').innerText = formatEuros(fin.inv);
+            document.getElementById('bilanCapital').innerText = formatEuros(fin.cap);
+            document.getElementById('bilanGain').innerText = formatEuros(fin.cap - fin.inv);
+            document.getElementById('bilanMult').innerText = "x" + (fin.inv > 0 ? (fin.cap / fin.inv).toFixed(2) : "0");
+            document.getElementById('bilanPart').innerText = (fin.cap > 0 ? (((fin.cap - fin.inv) / fin.cap) * 100).toFixed(0) : "0") + "%";
+            document.getElementById('bilanAge').innerText = fin.age + " ans";
+            updateCharts(dataPoints, actifsFinaux);
+        }
+
+        function updateCharts(data, actifs) {
+            const ctxL = document.getElementById('chartLine').getContext('2d');
+            const ctxP = document.getElementById('chartPie').getContext('2d');
+            if (lineChart) lineChart.destroy();
+            if (pieChart) pieChart.destroy();
+            
+            lineChart = new Chart(ctxL, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.age),
+                    datasets: [{ label: 'Capital (€)', data: data.map(d => d.cap), borderColor: '#6366f1', fill: true, tension: 0.3, pointRadius: 0 }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: true, intersect: false, mode: 'index' }
+                    }, 
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { 
+                        y: { display: false }, 
+                        x: { grid: { display: false }, ticks: { font: { size: 9 } } } 
+                    } 
+                }
+            });
+
+            const av = actifs.filter(a => a.valeur > 1);
+            pieChart = new Chart(ctxP, {
+                type: 'doughnut',
+                data: { 
+                    labels: av.map(a => a.nom), 
+                    datasets: [{ data: av.map(a => a.valeur), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316'] }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '65%', 
+                    plugins: { 
+                        tooltip: { enabled: true },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            labels: { font: { size: 9, weight: 'bold' }, padding: 10, boxWidth: 10, usePointStyle: true } 
+                        } 
+                    } 
+                }
+            });
+        }
+
+        function copierRapport() {
+            const ageAct = document.getElementById('ageActuel').value;
+            const capIni = document.getElementById('capitalInitial').value;
+            const totalF = document.getElementById('totalFinal').innerText;
+            const investi = document.getElementById('bilanInvesti').innerText;
+            const gain = document.getElementById('bilanGain').innerText;
+            const ageFin = document.getElementById('bilanAge').innerText;
+
+            let texte = `📊 RAPPORT DE STRATÉGIE PEA\n`;
+            texte += `-----------------------------------\n`;
+            texte += `Départ : ${ageAct} ans | Capital : ${formatEuros(capIni)}\n\n`;
+            
+            phases.forEach((p, i) => {
+                texte += `PHASE ${i+1} : ${p.nom}\n`;
+                texte += `- Durée : ${p.duree} ans\n`;
+                texte += `- Versement : ${formatEuros(p.budget)}/mois\n`;
+                p.poches.forEach(poc => {
+                    texte += `  • ${poc.nom} (${poc.pct}%)\n`;
+                    poc.investissements.forEach(inv => {
+                        texte += `    - ${inv.nom} : ${inv.pct}% (Espérance: ${inv.rendement}%)\n`;
+                    });
+                });
+                texte += `\n`;
+            });
+
+            texte += `-----------------------------------\n`;
+            texte += `BILAN FINAL (Mode ${modeNet ? 'NET' : 'BRUT'})\n`;
+            texte += `Capital projeté : ${totalF}\n`;
+            texte += `Total versé : ${investi}\n`;
+            texte += `Gain réel : ${gain}\n`;
+            texte += `Âge atteint : ${ageFin}\n`;
+
+            const el = document.createElement('textarea');
+            el.value = texte;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            showToast("✅ Rapport copié !");
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold text-[11px] shadow-2xl z-[1000] animate-bounce";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function exportToFile() {
+            const config = { 
+                age: document.getElementById('ageActuel').value, 
+                capital: document.getElementById('capitalInitial').value, 
+                phases: phases, 
+                modeNet: modeNet 
+            };
+            const json = JSON.stringify(config, null, 2);
+
+            // Essayer l'API "Enregistrer sous" si disponible
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: 'ma_strategie_pea.json',
+                        types: [{ description: 'Fichier JSON', accept: { 'application/json': ['.json'] } }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(json);
+                    await writable.close();
+                    showToast("✅ Fichier enregistré avec succès");
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // L'utilisateur a annulé
+                }
+            }
+
+            // Fallback pour les navigateurs ne supportant pas showSaveFilePicker
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "strategie_pea.json";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
+            showToast("📥 Téléchargé (voir dossier Téléchargements)");
+        }
+
+        function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    document.getElementById('ageActuel').value = config.age;
+                    document.getElementById('capitalInitial').value = config.capital;
+                    phases = config.phases;
+                    setMode(config.modeNet || false);
+                    render(); calculer();
+                    toggleTab('main');
+                    showToast("✅ Stratégie chargée !");
+                } catch (err) { showToast("❌ Fichier corrompu"); }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetConfiguration() { 
+            if(confirm("Effacer tout ?")) { 
+                localStorage.removeItem('pea_v9_store'); 
+                location.reload(); 
+            } 
+        }
+
+        window.onload = () => {
+            const saved = localStorage.getItem('pea_v9_store');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('ageActuel').value = config.age;
+                document.getElementById('capitalInitial').value = config.capital;
+                phases = config.phases;
+                setMode(config.modeNet || false);
+            }
+            render(); calculer();
+        };
+    </script>
+</body>
+</html>

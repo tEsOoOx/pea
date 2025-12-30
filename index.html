@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Export Manuel</title>
+    <title>Stratège PEA Pro - Allocation Initiale</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -75,7 +75,6 @@
             transition: all 0.2s;
         }
 
-        /* Styles pour les modes de calcul */
         .mode-toggle {
             display: flex;
             background: #f1f5f9;
@@ -123,7 +122,6 @@
             </div>
         </header>
 
-        <!-- Barre d'actions -->
         <div class="flex flex-wrap gap-3 mb-6">
             <button onclick="copierRapport()" class="btn-action bg-emerald-600 text-white hover:bg-emerald-700 shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
@@ -150,15 +148,21 @@
 
         <div id="view-main" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-7 space-y-6">
-                <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-indigo-500">
-                    <div class="space-y-1 text-center">
-                        <label class="stat-label">Âge actuel</label>
-                        <input type="number" id="ageActuel" value="30" oninput="handleParamChange()" class="input-field w-full">
+                <!-- Bloc Configuration Initiale -->
+                <div class="space-y-4">
+                    <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-slate-900">
+                        <div class="space-y-1 text-center">
+                            <label class="stat-label">Âge actuel</label>
+                            <input type="number" id="ageActuel" value="30" oninput="handleParamChange()" class="input-field w-full">
+                        </div>
+                        <div class="space-y-1 text-center">
+                            <label class="stat-label">Capital initial (€)</label>
+                            <input type="number" id="capitalInitial" value="5000" oninput="handleParamChange()" class="input-field w-full text-indigo-600">
+                        </div>
                     </div>
-                    <div class="space-y-1 text-center">
-                        <label class="stat-label">Capital initial (€)</label>
-                        <input type="number" id="capitalInitial" value="5000" oninput="handleParamChange()" class="input-field w-full text-indigo-600">
-                    </div>
+
+                    <!-- Allocation du Capital Initial -->
+                    <div id="allocationInitialeConteneur"></div>
                 </div>
 
                 <div id="phasesConteneur" class="space-y-6"></div>
@@ -167,7 +171,6 @@
                     + CLONER LA DERNIÈRE PHASE
                 </button>
 
-                <!-- Tableau de bord résultats -->
                 <div class="card p-5 bg-white border-t-4 border-slate-900 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
                     <div><p class="stat-label">Total Investi</p><p id="bilanInvesti" class="font-800 text-slate-700">-</p></div>
                     <div><p class="stat-label">Valeur Finale</p><p id="bilanCapital" class="font-800 text-indigo-600">-</p></div>
@@ -186,7 +189,7 @@
                         <div id="gainFinal" class="mt-2 inline-block px-3 py-1 bg-white rounded-lg text-[10px] font-bold text-emerald-600">+ 0 €</div>
                     </div>
                     <div class="card p-4 space-y-6">
-                        <div class="h-56 w-full"><canvas id="chartLine"></canvas></div>
+                        <div class="h-64 w-full"><canvas id="chartLine"></canvas></div>
                         <div class="h-72 w-full"><canvas id="chartPie"></canvas></div>
                     </div>
                 </div>
@@ -209,6 +212,13 @@
             { nom: "TotalEnergies", rendement: 11.2 },
             { nom: "Personnalisé", rendement: 7 }
         ];
+
+        // Structure pour l'allocation initiale (même principe que poches de phase)
+        let allocationInitiale = {
+            poches: [
+                { id: 991, nom: "Poche ETF", pct: 100, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] }
+            ]
+        };
 
         let phases = [{
             id: 1, nom: "Phase 1", duree: 20, budget: 1000,
@@ -245,15 +255,30 @@
                 const config = {
                     age: document.getElementById('ageActuel').value,
                     capital: document.getElementById('capitalInitial').value,
+                    allocationInitiale: allocationInitiale,
                     phases: phases,
                     modeNet: modeNet
                 };
-                localStorage.setItem('pea_v9_store', JSON.stringify(config));
+                localStorage.setItem('pea_v10_store', JSON.stringify(config));
                 if (el) el.classList.remove('visible');
             }, 1000);
         }
 
         function updateLiveAmounts() {
+            const capIni = parseNum(document.getElementById('capitalInitial').value);
+            // Update allocation initiale labels
+            allocationInitiale.poches.forEach(poc => {
+                const bP = capIni * (parseNum(poc.pct)/100);
+                const elPoc = document.getElementById(`eur-poche-init-${poc.id}`);
+                if (elPoc) elPoc.innerText = `${Math.round(bP)}€`;
+                poc.investissements.forEach(inv => {
+                    const valInv = bP * (parseNum(inv.pct)/100);
+                    const elInv = document.getElementById(`eur-inv-init-${inv.id}`);
+                    if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
+                });
+            });
+
+            // Update phases labels
             phases.forEach(p => {
                 const budget = parseNum(p.budget);
                 p.poches.forEach(poc => {
@@ -269,7 +294,65 @@
             });
         }
 
-        function render() {
+        function renderAllocationInitiale() {
+            const cont = document.getElementById('allocationInitialeConteneur');
+            const capIni = parseNum(document.getElementById('capitalInitial').value);
+            
+            cont.innerHTML = `
+            <div class="card overflow-hidden border-t-4 border-emerald-500 bg-emerald-50/10">
+                <div class="p-3 bg-emerald-50/50 border-b border-emerald-100 flex justify-center items-center gap-2">
+                    <span class="font-800 text-[10px] text-emerald-700 tracking-widest uppercase">Allocation du Capital Initial</span>
+                </div>
+                <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${allocationInitiale.poches.map(poc => {
+                        const bP = capIni * (parseNum(poc.pct)/100);
+                        return `
+                        <div class="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <input type="text" value="${poc.nom}" oninput="updateInitPocheData(${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
+                                <div class="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
+                                    <input type="number" value="${poc.pct}" oninput="updateInitPocheData(${poc.id}, 'pct', this.value)" class="bg-transparent w-6 text-center font-800 outline-none text-[10px]">
+                                    <span class="text-[8px]">%</span>
+                                    <span id="eur-poche-init-${poc.id}" class="text-[9px] font-bold border-l border-emerald-200 ml-1 pl-1.5">${Math.round(bP)}€</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                ${poc.investissements.map(inv => {
+                                    const vInv = bP * (parseNum(inv.pct)/100);
+                                    return `
+                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1.5">
+                                        <div class="flex justify-between">
+                                            <select onchange="updateInitInvData(${poc.id}, ${inv.id}, 'nom', this.value)" class="custom-select text-[9px] font-bold outline-none flex-grow bg-transparent">
+                                                ${LISTE_ACTIFS.map(a => `<option value="${a.nom}" ${inv.nom === a.nom ? 'selected' : ''}>${a.nom}</option>`).join('')}
+                                            </select>
+                                            <button onclick="supprimerInitActif(${poc.id}, ${inv.id})" class="text-slate-300 ml-2">×</button>
+                                        </div>
+                                        <div class="flex justify-between items-center text-[9px]">
+                                            <div class="flex items-center gap-1 bg-white px-1.5 py-0.5 rounded shadow-sm border border-slate-100">
+                                                <span class="text-slate-400 font-bold">PART:</span>
+                                                <input type="number" value="${inv.pct}" oninput="updateInitInvData(${poc.id}, ${inv.id}, 'pct', this.value)" class="w-6 text-center font-800 text-emerald-600 bg-transparent outline-none">
+                                                <span id="eur-inv-init-${inv.id}" class="text-emerald-900 ml-1">(${Math.round(vInv)}€)</span>
+                                            </div>
+                                            <div class="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                                <span class="text-emerald-400 font-bold">TAUX:</span>
+                                                <input type="number" value="${inv.rendement}" oninput="updateInitInvData(${poc.id}, ${inv.id}, 'rendement', this.value)" class="w-8 text-center font-800 text-emerald-600 bg-transparent outline-none">
+                                                <span class="text-emerald-400">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')}
+                                <button onclick="ajouterInitActif(${poc.id})" class="w-full py-1 border border-dashed border-emerald-200 rounded text-[8px] font-bold text-emerald-400">+ ACTIF</button>
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            `;
+        }
+
+        function renderPhases() {
             const cont = document.getElementById('phasesConteneur');
             cont.innerHTML = phases.map(p => {
                 const budget = parseNum(p.budget);
@@ -338,8 +421,46 @@
             }).join('');
         }
 
-        // --- FONCTIONS DE LOGIQUE ---
+        // --- FONCTIONS DE LOGIQUE ALLOCATION INITIALE ---
+        function updateInitPocheData(pocId, field, val) {
+            const poc = allocationInitiale.poches.find(x => x.id === pocId);
+            if (poc) { poc[field] = val; handleParamChange(); }
+        }
 
+        function updateInitInvData(pocId, invId, field, val) {
+            const poc = allocationInitiale.poches.find(x => x.id === pocId);
+            if (!poc) return;
+            const inv = poc.investissements.find(x => x.id === invId);
+            if (!inv) return;
+
+            if (field === 'nom') {
+                inv.nom = val;
+                const ref = LISTE_ACTIFS.find(a => a.nom === val);
+                if (ref) inv.rendement = ref.rendement;
+                renderAllocationInitiale();
+            } else {
+                inv[field] = val;
+            }
+            handleParamChange();
+        }
+
+        function ajouterInitActif(pocId) {
+            const poc = allocationInitiale.poches.find(x => x.id === pocId);
+            if (poc) {
+                poc.investissements.push({ id: Date.now(), nom: "iShares MSCI World Swap PEA", pct: 0, rendement: 12.8 });
+                renderAllocationInitiale();
+            }
+        }
+
+        function supprimerInitActif(pocId, invId) {
+            const poc = allocationInitiale.poches.find(x => x.id === pocId);
+            if (poc) {
+                poc.investissements = poc.investissements.filter(x => x.id !== invId);
+                renderAllocationInitiale(); handleParamChange();
+            }
+        }
+
+        // --- FONCTIONS DE LOGIQUE PHASES ---
         function updatePhaseData(id, field, val) {
             const p = phases.find(x => x.id === id);
             if (p) { p[field] = val; handleParamChange(); }
@@ -365,7 +486,7 @@
                 inv.nom = val;
                 const ref = LISTE_ACTIFS.find(a => a.nom === val);
                 if (ref) inv.rendement = ref.rendement;
-                render();
+                renderPhases();
             } else {
                 inv[field] = val;
             }
@@ -385,11 +506,11 @@
                 });
             });
             phases.push(clonedPhase);
-            render(); 
+            renderPhases(); 
             handleParamChange();
         }
 
-        function supprimerPhase(id) { if (phases.length > 1) { phases = phases.filter(x => x.id !== id); render(); handleParamChange(); } }
+        function supprimerPhase(id) { if (phases.length > 1) { phases = phases.filter(x => x.id !== id); renderPhases(); handleParamChange(); } }
         
         function ajouterActif(pId, pocId) { 
             const p = phases.find(x => x.id === pId);
@@ -397,7 +518,7 @@
                 const poc = p.poches.find(x => x.id === pocId);
                 if (poc) {
                     poc.investissements.push({ id: Date.now(), nom: "iShares MSCI World Swap PEA", pct: 0, rendement: 12.8 });
-                    render();
+                    renderPhases();
                 }
             }
         }
@@ -408,7 +529,7 @@
                 const poc = p.poches.find(x => x.id === pocId);
                 if (poc) {
                     poc.investissements = poc.investissements.filter(x => x.id !== invId);
-                    render(); handleParamChange();
+                    renderPhases(); handleParamChange();
                 }
             }
         }
@@ -431,16 +552,31 @@
             let ageAct = parseNum(document.getElementById('ageActuel').value);
             let capIni = parseNum(document.getElementById('capitalInitial').value);
             let totalInvesti = capIni;
-            let actifsFinaux = [{ nom: "Initial", valeur: capIni, rendement: 5 }];
-            let dataPoints = [{ age: ageAct, cap: capIni, inv: capIni }];
+            
+            // On prépare les actifs finaux à partir de l'allocation initiale
+            let actifsFinaux = [];
+            allocationInitiale.poches.forEach(poc => {
+                const bP = capIni * (parseNum(poc.pct)/100);
+                poc.investissements.forEach(inv => {
+                    const vInv = bP * (parseNum(inv.pct)/100);
+                    let ex = actifsFinaux.find(x => x.nom === inv.nom);
+                    if (ex) { ex.valeur += vInv; }
+                    else { actifsFinaux.push({ nom: inv.nom, valeur: vInv, rendement: inv.rendement }); }
+                });
+            });
 
+            let dataPoints = [{ age: ageAct, cap: capIni, inv: capIni }];
             let ageCourant = ageAct;
+
             phases.forEach(p => {
                 const d = parseNum(p.duree);
                 const b = parseNum(p.budget);
                 for (let a = 1; a <= d; a++) {
                     ageCourant++;
+                    // 1. Croissance de l'existant
                     actifsFinaux.forEach(ac => ac.valeur *= (1 + (parseNum(ac.rendement)/100)));
+                    
+                    // 2. Nouveaux versements de la phase
                     p.poches.forEach(poc => {
                         const bP = b * (parseNum(poc.pct)/100);
                         poc.investissements.forEach(inv => {
@@ -451,6 +587,7 @@
                             else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
                         });
                     });
+
                     let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
                     let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
                     dataPoints.push({ age: ageCourant, cap: tB - tx, inv: totalInvesti });
@@ -479,18 +616,34 @@
                 type: 'line',
                 data: {
                     labels: data.map(d => d.age),
-                    datasets: [{ label: 'Capital (€)', data: data.map(d => d.cap), borderColor: '#6366f1', fill: true, tension: 0.3, pointRadius: 0 }]
+                    datasets: [
+                        { label: 'Capital Total', data: data.map(d => d.cap), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+                        { label: 'Total Investi', data: data.map(d => d.inv), borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.1, pointRadius: 0 }
+                    ]
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: { 
                         legend: { display: false },
-                        tooltip: { enabled: true, intersect: false, mode: 'index' }
+                        tooltip: { 
+                            enabled: true, 
+                            intersect: false, 
+                            mode: 'index',
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatEuros(context.parsed.y);
+                                }
+                            }
+                        }
                     }, 
                     interaction: { mode: 'index', intersect: false },
                     scales: { 
-                        y: { display: false }, 
+                        y: { 
+                            display: true,
+                            position: 'left',
+                            ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } 
+                        }, 
                         x: { grid: { display: false }, ticks: { font: { size: 9 } } } 
                     } 
                 }
@@ -529,8 +682,17 @@
 
             let texte = `📊 RAPPORT DE STRATÉGIE PEA\n`;
             texte += `-----------------------------------\n`;
-            texte += `Départ : ${ageAct} ans | Capital : ${formatEuros(capIni)}\n\n`;
+            texte += `Départ : ${ageAct} ans | Capital Initial : ${formatEuros(capIni)}\n`;
             
+            texte += `ALLOCATION INITIALE :\n`;
+            allocationInitiale.poches.forEach(poc => {
+                texte += `  • ${poc.nom} (${poc.pct}%)\n`;
+                poc.investissements.forEach(inv => {
+                    texte += `    - ${inv.nom} : ${inv.pct}% (${inv.rendement}%)\n`;
+                });
+            });
+            texte += `\n`;
+
             phases.forEach((p, i) => {
                 texte += `PHASE ${i+1} : ${p.nom}\n`;
                 texte += `- Durée : ${p.duree} ans\n`;
@@ -538,7 +700,7 @@
                 p.poches.forEach(poc => {
                     texte += `  • ${poc.nom} (${poc.pct}%)\n`;
                     poc.investissements.forEach(inv => {
-                        texte += `    - ${inv.nom} : ${inv.pct}% (Espérance: ${inv.rendement}%)\n`;
+                        texte += `    - ${inv.nom} : ${inv.pct}% (${inv.rendement}%)\n`;
                     });
                 });
                 texte += `\n`;
@@ -573,12 +735,12 @@
             const config = { 
                 age: document.getElementById('ageActuel').value, 
                 capital: document.getElementById('capitalInitial').value, 
+                allocationInitiale: allocationInitiale,
                 phases: phases, 
                 modeNet: modeNet 
             };
             const json = JSON.stringify(config, null, 2);
 
-            // Essayer l'API "Enregistrer sous" si disponible
             if ('showSaveFilePicker' in window) {
                 try {
                     const handle = await window.showSaveFilePicker({
@@ -591,11 +753,10 @@
                     showToast("✅ Fichier enregistré avec succès");
                     return;
                 } catch (err) {
-                    if (err.name === 'AbortError') return; // L'utilisateur a annulé
+                    if (err.name === 'AbortError') return;
                 }
             }
 
-            // Fallback pour les navigateurs ne supportant pas showSaveFilePicker
             const blob = new Blob([json], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -616,9 +777,11 @@
                     const config = JSON.parse(e.target.result);
                     document.getElementById('ageActuel').value = config.age;
                     document.getElementById('capitalInitial').value = config.capital;
+                    allocationInitiale = config.allocationInitiale || allocationInitiale;
                     phases = config.phases;
                     setMode(config.modeNet || false);
-                    render(); calculer();
+                    renderAllocationInitiale();
+                    renderPhases(); calculer();
                     toggleTab('main');
                     showToast("✅ Stratégie chargée !");
                 } catch (err) { showToast("❌ Fichier corrompu"); }
@@ -628,21 +791,24 @@
 
         function resetConfiguration() { 
             if(confirm("Effacer tout ?")) { 
-                localStorage.removeItem('pea_v9_store'); 
+                localStorage.removeItem('pea_v10_store'); 
                 location.reload(); 
             } 
         }
 
         window.onload = () => {
-            const saved = localStorage.getItem('pea_v9_store');
+            const saved = localStorage.getItem('pea_v10_store');
             if (saved) {
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;
                 document.getElementById('capitalInitial').value = config.capital;
+                allocationInitiale = config.allocationInitiale || allocationInitiale;
                 phases = config.phases;
                 setMode(config.modeNet || false);
             }
-            render(); calculer();
+            renderAllocationInitiale();
+            renderPhases(); 
+            calculer();
         };
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Allocation Initiale</title>
+    <title>Stratège PEA Pro - Allocation Initiale Multi-Poches</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -161,7 +161,7 @@
                         </div>
                     </div>
 
-                    <!-- Allocation du Capital Initial -->
+                    <!-- Allocation du Capital Initial Multi-Poches -->
                     <div id="allocationInitialeConteneur"></div>
                 </div>
 
@@ -213,10 +213,11 @@
             { nom: "Personnalisé", rendement: 7 }
         ];
 
-        // Structure pour l'allocation initiale (même principe que poches de phase)
+        // Structure pour l'allocation initiale avec 2 poches (ETF & Actions)
         let allocationInitiale = {
             poches: [
-                { id: 991, nom: "Poche ETF", pct: 100, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] }
+                { id: 991, nom: "Poche ETF", pct: 70, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
+                { id: 992, nom: "Poche Actions", pct: 30, investissements: [{ id: 9921, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
             ]
         };
 
@@ -259,14 +260,13 @@
                     phases: phases,
                     modeNet: modeNet
                 };
-                localStorage.setItem('pea_v10_store', JSON.stringify(config));
+                localStorage.setItem('pea_v11_store', JSON.stringify(config));
                 if (el) el.classList.remove('visible');
             }, 1000);
         }
 
         function updateLiveAmounts() {
             const capIni = parseNum(document.getElementById('capitalInitial').value);
-            // Update allocation initiale labels
             allocationInitiale.poches.forEach(poc => {
                 const bP = capIni * (parseNum(poc.pct)/100);
                 const elPoc = document.getElementById(`eur-poche-init-${poc.id}`);
@@ -278,7 +278,6 @@
                 });
             });
 
-            // Update phases labels
             phases.forEach(p => {
                 const budget = parseNum(p.budget);
                 p.poches.forEach(poc => {
@@ -553,7 +552,6 @@
             let capIni = parseNum(document.getElementById('capitalInitial').value);
             let totalInvesti = capIni;
             
-            // On prépare les actifs finaux à partir de l'allocation initiale
             let actifsFinaux = [];
             allocationInitiale.poches.forEach(poc => {
                 const bP = capIni * (parseNum(poc.pct)/100);
@@ -573,10 +571,8 @@
                 const b = parseNum(p.budget);
                 for (let a = 1; a <= d; a++) {
                     ageCourant++;
-                    // 1. Croissance de l'existant
                     actifsFinaux.forEach(ac => ac.valeur *= (1 + (parseNum(ac.rendement)/100)));
                     
-                    // 2. Nouveaux versements de la phase
                     p.poches.forEach(poc => {
                         const bP = b * (parseNum(poc.pct)/100);
                         poc.investissements.forEach(inv => {
@@ -642,6 +638,7 @@
                         y: { 
                             display: true,
                             position: 'left',
+                            grid: { color: '#f1f5f9' },
                             ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } 
                         }, 
                         x: { grid: { display: false }, ticks: { font: { size: 9 } } } 
@@ -791,13 +788,13 @@
 
         function resetConfiguration() { 
             if(confirm("Effacer tout ?")) { 
-                localStorage.removeItem('pea_v10_store'); 
+                localStorage.removeItem('pea_v11_store'); 
                 location.reload(); 
             } 
         }
 
         window.onload = () => {
-            const saved = localStorage.getItem('pea_v10_store');
+            const saved = localStorage.getItem('pea_v11_store');
             if (saved) {
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;

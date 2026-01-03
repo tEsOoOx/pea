@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Allocation Initiale Multi-Poches</title>
+    <title>Stratège PEA Pro - Fréquences de Versement</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -213,7 +213,13 @@
             { nom: "Personnalisé", rendement: 7 }
         ];
 
-        // Structure pour l'allocation initiale avec 2 poches (ETF & Actions)
+        const FREQUENCES = [
+            { id: "mensuel", label: "/mois", div: 1 },
+            { id: "trimestriel", label: "/trimestre", div: 3 },
+            { id: "semestriel", label: "/semestre", div: 6 },
+            { id: "annuel", label: "/an", div: 12 }
+        ];
+
         let allocationInitiale = {
             poches: [
                 { id: 991, nom: "Poche ETF", pct: 70, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
@@ -222,7 +228,7 @@
         };
 
         let phases = [{
-            id: 1, nom: "Phase 1", duree: 20, budget: 1000,
+            id: 1, nom: "Phase 1", duree: 20, budget: 1000, frequence: "mensuel",
             poches: [
                 { id: 11, nom: "Poche ETF", pct: 70, investissements: [{ id: 111, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
                 { id: 12, nom: "Poche Actions", pct: 30, investissements: [{ id: 121, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
@@ -367,7 +373,9 @@
                         <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
                             <span class="stat-label">Budget:</span>
                             <input type="number" value="${p.budget}" oninput="updatePhaseData(${p.id}, 'budget', this.value)" class="w-16 font-800 text-indigo-600 outline-none text-center">
-                            <span class="text-[9px] font-bold text-indigo-300">€/m</span>
+                            <select onchange="updatePhaseData(${p.id}, 'frequence', this.value)" class="bg-transparent font-bold text-indigo-400 outline-none">
+                                ${FREQUENCES.map(f => `<option value="${f.id}" ${p.frequence === f.id ? 'selected' : ''}>${f.label}</option>`).join('')}
+                            </select>
                         </div>
                     </div>
                     <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -569,21 +577,37 @@
             phases.forEach(p => {
                 const d = parseNum(p.duree);
                 const b = parseNum(p.budget);
+                const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
+                
                 for (let a = 1; a <= d; a++) {
-                    ageCourant++;
-                    actifsFinaux.forEach(ac => ac.valeur *= (1 + (parseNum(ac.rendement)/100)));
-                    
-                    p.poches.forEach(poc => {
-                        const bP = b * (parseNum(poc.pct)/100);
-                        poc.investissements.forEach(inv => {
-                            const vA = (bP * (parseNum(inv.pct)/100)) * 12;
-                            totalInvesti += vA;
-                            let ex = actifsFinaux.find(x => x.nom === inv.nom);
-                            if (ex) { ex.valeur += vA; ex.rendement = inv.rendement; }
-                            else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
+                    // Simulation mois par mois pour la précision des intérêts
+                    for (let m = 1; m <= 12; m++) {
+                        // 1. Croissance mensuelle
+                        actifsFinaux.forEach(ac => {
+                            const rMensuel = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
+                            ac.valeur *= (1 + rMensuel);
                         });
-                    });
 
+                        // 2. Versement selon fréquence
+                        if ((m - 1) % freq.div === 0) {
+                            p.poches.forEach(poc => {
+                                const bP = b * (parseNum(poc.pct)/100);
+                                poc.investissements.forEach(inv => {
+                                    const vA = (bP * (parseNum(inv.pct)/100));
+                                    totalInvesti += vA;
+                                    let ex = actifsFinaux.find(x => x.nom === inv.nom);
+                                    if (ex) { 
+                                        ex.valeur += vA; 
+                                        ex.rendement = inv.rendement; 
+                                    } else { 
+                                        actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); 
+                                    }
+                                });
+                            });
+                        }
+                    }
+                    
+                    ageCourant++;
                     let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
                     let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
                     dataPoints.push({ age: ageCourant, cap: tB - tx, inv: totalInvesti });
@@ -691,9 +715,10 @@
             texte += `\n`;
 
             phases.forEach((p, i) => {
+                const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
                 texte += `PHASE ${i+1} : ${p.nom}\n`;
                 texte += `- Durée : ${p.duree} ans\n`;
-                texte += `- Versement : ${formatEuros(p.budget)}/mois\n`;
+                texte += `- Versement : ${formatEuros(p.budget)}${freq.label}\n`;
                 p.poches.forEach(poc => {
                     texte += `  • ${poc.nom} (${poc.pct}%)\n`;
                     poc.investissements.forEach(inv => {

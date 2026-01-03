@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Fréquences de Versement</title>
+    <title>Stratège PEA Pro - Unités Temporelles</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -45,8 +45,9 @@
             appearance: none; 
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
             background-repeat: no-repeat; 
-            background-position: right 0.5rem center; 
-            background-size: 1em; 
+            background-position: right 0.2rem center; 
+            background-size: 0.8em; 
+            padding-right: 1.2rem;
         }
 
         .stat-label { 
@@ -220,6 +221,11 @@
             { id: "annuel", label: "/an", div: 12 }
         ];
 
+        const UNITES_DUREE = [
+            { id: "ans", label: "ans" },
+            { id: "mois", label: "mois" }
+        ];
+
         let allocationInitiale = {
             poches: [
                 { id: 991, nom: "Poche ETF", pct: 70, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
@@ -228,7 +234,7 @@
         };
 
         let phases = [{
-            id: 1, nom: "Phase 1", duree: 20, budget: 1000, frequence: "mensuel",
+            id: 1, nom: "Phase 1", duree: 20, uniteDuree: "ans", budget: 1000, frequence: "mensuel",
             poches: [
                 { id: 11, nom: "Poche ETF", pct: 70, investissements: [{ id: 111, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
                 { id: 12, nom: "Poche Actions", pct: 30, investissements: [{ id: 121, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
@@ -266,7 +272,7 @@
                     phases: phases,
                     modeNet: modeNet
                 };
-                localStorage.setItem('pea_v11_store', JSON.stringify(config));
+                localStorage.setItem('pea_v12_store', JSON.stringify(config));
                 if (el) el.classList.remove('visible');
             }, 1000);
         }
@@ -368,7 +374,10 @@
                         <input type="text" value="${p.nom}" oninput="updatePhaseData(${p.id}, 'nom', this.value)" class="bg-transparent font-800 text-xs outline-none text-center">
                         <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
                             <span class="stat-label">Durée:</span>
-                            <input type="number" value="${p.duree}" oninput="updatePhaseData(${p.id}, 'duree', this.value)" class="w-8 font-bold text-center outline-none">
+                            <input type="number" value="${p.duree}" oninput="updatePhaseData(${p.id}, 'duree', this.value)" class="w-10 font-bold text-center outline-none">
+                            <select onchange="updatePhaseData(${p.id}, 'uniteDuree', this.value)" class="bg-transparent font-bold text-slate-400 outline-none cursor-pointer">
+                                ${UNITES_DUREE.map(u => `<option value="${u.id}" ${p.uniteDuree === u.id ? 'selected' : ''}>${u.label}</option>`).join('')}
+                            </select>
                         </div>
                         <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
                             <span class="stat-label">Budget:</span>
@@ -573,56 +582,74 @@
 
             let dataPoints = [{ age: ageAct, cap: capIni, inv: capIni }];
             let ageCourant = ageAct;
+            let moisTotalEcoule = 0;
 
             phases.forEach(p => {
-                const d = parseNum(p.duree);
+                const dureeVal = parseNum(p.duree);
+                const unite = p.uniteDuree || "ans";
+                const totalMoisPhase = unite === "ans" ? dureeVal * 12 : dureeVal;
+                
                 const b = parseNum(p.budget);
                 const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
                 
-                for (let a = 1; a <= d; a++) {
-                    // Simulation mois par mois pour la précision des intérêts
-                    for (let m = 1; m <= 12; m++) {
-                        // 1. Croissance mensuelle
-                        actifsFinaux.forEach(ac => {
-                            const rMensuel = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
-                            ac.valeur *= (1 + rMensuel);
-                        });
+                for (let mPhase = 1; mPhase <= totalMoisPhase; mPhase++) {
+                    moisTotalEcoule++;
+                    
+                    // 1. Croissance mensuelle
+                    actifsFinaux.forEach(ac => {
+                        const rMensuel = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
+                        ac.valeur *= (1 + rMensuel);
+                    });
 
-                        // 2. Versement selon fréquence
-                        if ((m - 1) % freq.div === 0) {
-                            p.poches.forEach(poc => {
-                                const bP = b * (parseNum(poc.pct)/100);
-                                poc.investissements.forEach(inv => {
-                                    const vA = (bP * (parseNum(inv.pct)/100));
-                                    totalInvesti += vA;
-                                    let ex = actifsFinaux.find(x => x.nom === inv.nom);
-                                    if (ex) { 
-                                        ex.valeur += vA; 
-                                        ex.rendement = inv.rendement; 
-                                    } else { 
-                                        actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); 
-                                    }
-                                });
+                    // 2. Versement selon fréquence
+                    if ((mPhase - 1) % freq.div === 0) {
+                        p.poches.forEach(poc => {
+                            const bP = b * (parseNum(poc.pct)/100);
+                            poc.investissements.forEach(inv => {
+                                const vA = (bP * (parseNum(inv.pct)/100));
+                                totalInvesti += vA;
+                                let ex = actifsFinaux.find(x => x.nom === inv.nom);
+                                if (ex) { 
+                                    ex.valeur += vA; 
+                                    ex.rendement = inv.rendement; 
+                                } else { 
+                                    actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); 
+                                }
                             });
+                        });
+                    }
+
+                    // On enregistre un point de donnée tous les 12 mois ou au dernier mois de la simulation
+                    if (moisTotalEcoule % 12 === 0 || (p === phases[phases.length - 1] && mPhase === totalMoisPhase)) {
+                        let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
+                        let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
+                        let agePoint = ageAct + Math.floor(moisTotalEcoule / 12);
+                        // On évite les doublons d'âge dans le graphique si on finit sur un mois non multiple de 12
+                        if (!dataPoints.find(dp => dp.age === agePoint)) {
+                            dataPoints.push({ age: agePoint, cap: tB - tx, inv: totalInvesti });
+                        } else {
+                            // On met à jour le dernier point si c'est la fin absolue
+                            const idx = dataPoints.findIndex(dp => dp.age === agePoint);
+                            dataPoints[idx] = { age: agePoint, cap: tB - tx, inv: totalInvesti };
                         }
                     }
-                    
-                    ageCourant++;
-                    let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
-                    let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
-                    dataPoints.push({ age: ageCourant, cap: tB - tx, inv: totalInvesti });
                 }
             });
 
             const fin = dataPoints[dataPoints.length - 1];
-            document.getElementById('totalFinal').innerText = formatEuros(fin.cap);
-            document.getElementById('gainFinal').innerText = "+ " + formatEuros(fin.cap - fin.inv);
-            document.getElementById('bilanInvesti').innerText = formatEuros(fin.inv);
-            document.getElementById('bilanCapital').innerText = formatEuros(fin.cap);
-            document.getElementById('bilanGain').innerText = formatEuros(fin.cap - fin.inv);
-            document.getElementById('bilanMult').innerText = "x" + (fin.inv > 0 ? (fin.cap / fin.inv).toFixed(2) : "0");
-            document.getElementById('bilanPart').innerText = (fin.cap > 0 ? (((fin.cap - fin.inv) / fin.cap) * 100).toFixed(0) : "0") + "%";
-            document.getElementById('bilanAge').innerText = fin.age + " ans";
+            const tBFinal = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
+            const txFinal = modeNet ? Math.max(0, (tBFinal - totalInvesti) * 0.172) : 0;
+            const capFinalNet = tBFinal - txFinal;
+
+            document.getElementById('totalFinal').innerText = formatEuros(capFinalNet);
+            document.getElementById('gainFinal').innerText = "+ " + formatEuros(capFinalNet - totalInvesti);
+            document.getElementById('bilanInvesti').innerText = formatEuros(totalInvesti);
+            document.getElementById('bilanCapital').innerText = formatEuros(capFinalNet);
+            document.getElementById('bilanGain').innerText = formatEuros(capFinalNet - totalInvesti);
+            document.getElementById('bilanMult').innerText = "x" + (totalInvesti > 0 ? (capFinalNet / totalInvesti).toFixed(2) : "0");
+            document.getElementById('bilanPart').innerText = (capFinalNet > 0 ? (((capFinalNet - totalInvesti) / capFinalNet) * 100).toFixed(0) : "0") + "%";
+            document.getElementById('bilanAge').innerText = (ageAct + Math.floor(moisTotalEcoule/12)) + " ans" + (moisTotalEcoule%12 > 0 ? ` et ${moisTotalEcoule%12}m` : "");
+            
             updateCharts(dataPoints, actifsFinaux);
         }
 
@@ -716,8 +743,9 @@
 
             phases.forEach((p, i) => {
                 const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
+                const unit = UNITES_DUREE.find(u => u.id === (p.uniteDuree || "ans"));
                 texte += `PHASE ${i+1} : ${p.nom}\n`;
-                texte += `- Durée : ${p.duree} ans\n`;
+                texte += `- Durée : ${p.duree} ${unit.label}\n`;
                 texte += `- Versement : ${formatEuros(p.budget)}${freq.label}\n`;
                 p.poches.forEach(poc => {
                     texte += `  • ${poc.nom} (${poc.pct}%)\n`;
@@ -813,13 +841,13 @@
 
         function resetConfiguration() { 
             if(confirm("Effacer tout ?")) { 
-                localStorage.removeItem('pea_v11_store'); 
+                localStorage.removeItem('pea_v12_store'); 
                 location.reload(); 
             } 
         }
 
         window.onload = () => {
-            const saved = localStorage.getItem('pea_v11_store');
+            const saved = localStorage.getItem('pea_v12_store');
             if (saved) {
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;

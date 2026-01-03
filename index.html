@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Unités Temporelles</title>
+    <title>Stratège PEA Pro - Versements Libres</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -149,7 +149,7 @@
 
         <div id="view-main" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-7 space-y-6">
-                <!-- Bloc Configuration Initiale -->
+                <!-- Configuration Initiale -->
                 <div class="space-y-4">
                     <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-slate-900">
                         <div class="space-y-1 text-center">
@@ -162,7 +162,6 @@
                         </div>
                     </div>
 
-                    <!-- Allocation du Capital Initial Multi-Poches -->
                     <div id="allocationInitialeConteneur"></div>
                 </div>
 
@@ -218,7 +217,8 @@
             { id: "mensuel", label: "/mois", div: 1 },
             { id: "trimestriel", label: "/trimestre", div: 3 },
             { id: "semestriel", label: "/semestre", div: 6 },
-            { id: "annuel", label: "/an", div: 12 }
+            { id: "annuel", label: "/an", div: 12 },
+            { id: "ponctuel", label: "en une fois", div: 0 } // div 0 = logique spéciale
         ];
 
         const UNITES_DUREE = [
@@ -272,7 +272,7 @@
                     phases: phases,
                     modeNet: modeNet
                 };
-                localStorage.setItem('pea_v12_store', JSON.stringify(config));
+                localStorage.setItem('pea_v13_store', JSON.stringify(config));
                 if (el) el.classList.remove('visible');
             }, 1000);
         }
@@ -312,7 +312,7 @@
             cont.innerHTML = `
             <div class="card overflow-hidden border-t-4 border-emerald-500 bg-emerald-50/10">
                 <div class="p-3 bg-emerald-50/50 border-b border-emerald-100 flex justify-center items-center gap-2">
-                    <span class="font-800 text-[10px] text-emerald-700 tracking-widest uppercase">Allocation du Capital Initial</span>
+                    <span class="font-800 text-[10px] text-emerald-700 tracking-widest uppercase">Répartition Initiale</span>
                 </div>
                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     ${allocationInitiale.poches.map(poc => {
@@ -437,7 +437,7 @@
             }).join('');
         }
 
-        // --- FONCTIONS DE LOGIQUE ALLOCATION INITIALE ---
+        // LOGIQUE ALLOCATION INITIALE
         function updateInitPocheData(pocId, field, val) {
             const poc = allocationInitiale.poches.find(x => x.id === pocId);
             if (poc) { poc[field] = val; handleParamChange(); }
@@ -476,7 +476,7 @@
             }
         }
 
-        // --- FONCTIONS DE LOGIQUE PHASES ---
+        // LOGIQUE PHASES
         function updatePhaseData(id, field, val) {
             const p = phases.find(x => x.id === id);
             if (p) { p[field] = val; handleParamChange(); }
@@ -601,34 +601,43 @@
                         ac.valeur *= (1 + rMensuel);
                     });
 
-                    // 2. Versement selon fréquence
-                    if ((mPhase - 1) % freq.div === 0) {
+                    // 2. Logique de versement
+                    if (freq.id === "ponctuel") {
+                        // Uniquement au TOUT PREMIER MOIS de la phase
+                        if (mPhase === 1) {
+                            p.poches.forEach(poc => {
+                                const bP = b * (parseNum(poc.pct)/100);
+                                poc.investissements.forEach(inv => {
+                                    const vA = (bP * (parseNum(inv.pct)/100));
+                                    totalInvesti += vA;
+                                    let ex = actifsFinaux.find(x => x.nom === inv.nom);
+                                    if (ex) { ex.valeur += vA; ex.rendement = inv.rendement; }
+                                    else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
+                                });
+                            });
+                        }
+                    } else if ((mPhase - 1) % freq.div === 0) {
+                        // Logique périodique classique
                         p.poches.forEach(poc => {
                             const bP = b * (parseNum(poc.pct)/100);
                             poc.investissements.forEach(inv => {
                                 const vA = (bP * (parseNum(inv.pct)/100));
                                 totalInvesti += vA;
                                 let ex = actifsFinaux.find(x => x.nom === inv.nom);
-                                if (ex) { 
-                                    ex.valeur += vA; 
-                                    ex.rendement = inv.rendement; 
-                                } else { 
-                                    actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); 
-                                }
+                                if (ex) { ex.valeur += vA; ex.rendement = inv.rendement; }
+                                else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
                             });
                         });
                     }
 
-                    // On enregistre un point de donnée tous les 12 mois ou au dernier mois de la simulation
+                    // Enregistrement des points
                     if (moisTotalEcoule % 12 === 0 || (p === phases[phases.length - 1] && mPhase === totalMoisPhase)) {
                         let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
                         let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
                         let agePoint = ageAct + Math.floor(moisTotalEcoule / 12);
-                        // On évite les doublons d'âge dans le graphique si on finit sur un mois non multiple de 12
                         if (!dataPoints.find(dp => dp.age === agePoint)) {
                             dataPoints.push({ age: agePoint, cap: tB - tx, inv: totalInvesti });
                         } else {
-                            // On met à jour le dernier point si c'est la fin absolue
                             const idx = dataPoints.findIndex(dp => dp.age === agePoint);
                             dataPoints[idx] = { age: agePoint, cap: tB - tx, inv: totalInvesti };
                         }
@@ -636,7 +645,6 @@
                 }
             });
 
-            const fin = dataPoints[dataPoints.length - 1];
             const tBFinal = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
             const txFinal = modeNet ? Math.max(0, (tBFinal - totalInvesti) * 0.172) : 0;
             const capFinalNet = tBFinal - txFinal;
@@ -677,22 +685,12 @@
                             enabled: true, 
                             intersect: false, 
                             mode: 'index',
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + formatEuros(context.parsed.y);
-                                }
-                            }
+                            callbacks: { label: (c) => c.dataset.label + ': ' + formatEuros(c.parsed.y) }
                         }
                     }, 
-                    interaction: { mode: 'index', intersect: false },
                     scales: { 
-                        y: { 
-                            display: true,
-                            position: 'left',
-                            grid: { color: '#f1f5f9' },
-                            ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } 
-                        }, 
-                        x: { grid: { display: false }, ticks: { font: { size: 9 } } } 
+                        y: { ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } }, 
+                        x: { ticks: { font: { size: 9 } } } 
                     } 
                 }
             });
@@ -705,16 +703,9 @@
                     datasets: [{ data: av.map(a => a.valeur), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316'] }] 
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    cutout: '65%', 
+                    responsive: true, maintainAspectRatio: false, cutout: '65%', 
                     plugins: { 
-                        tooltip: { enabled: true },
-                        legend: { 
-                            display: true, 
-                            position: 'bottom', 
-                            labels: { font: { size: 9, weight: 'bold' }, padding: 10, boxWidth: 10, usePointStyle: true } 
-                        } 
+                        legend: { position: 'bottom', labels: { font: { size: 9, weight: 'bold' }, boxWidth: 10, usePointStyle: true } } 
                     } 
                 }
             });
@@ -730,30 +721,14 @@
 
             let texte = `📊 RAPPORT DE STRATÉGIE PEA\n`;
             texte += `-----------------------------------\n`;
-            texte += `Départ : ${ageAct} ans | Capital Initial : ${formatEuros(capIni)}\n`;
+            texte += `Départ : ${ageAct} ans | Capital Initial : ${formatEuros(capIni)}\n\n`;
             
-            texte += `ALLOCATION INITIALE :\n`;
-            allocationInitiale.poches.forEach(poc => {
-                texte += `  • ${poc.nom} (${poc.pct}%)\n`;
-                poc.investissements.forEach(inv => {
-                    texte += `    - ${inv.nom} : ${inv.pct}% (${inv.rendement}%)\n`;
-                });
-            });
-            texte += `\n`;
-
             phases.forEach((p, i) => {
                 const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
                 const unit = UNITES_DUREE.find(u => u.id === (p.uniteDuree || "ans"));
                 texte += `PHASE ${i+1} : ${p.nom}\n`;
                 texte += `- Durée : ${p.duree} ${unit.label}\n`;
-                texte += `- Versement : ${formatEuros(p.budget)}${freq.label}\n`;
-                p.poches.forEach(poc => {
-                    texte += `  • ${poc.nom} (${poc.pct}%)\n`;
-                    poc.investissements.forEach(inv => {
-                        texte += `    - ${inv.nom} : ${inv.pct}% (${inv.rendement}%)\n`;
-                    });
-                });
-                texte += `\n`;
+                texte += `- Versement : ${formatEuros(p.budget)} ${freq.label}\n\n`;
             });
 
             texte += `-----------------------------------\n`;
@@ -769,7 +744,6 @@
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-
             showToast("✅ Rapport copié !");
         }
 
@@ -782,40 +756,15 @@
         }
 
         async function exportToFile() {
-            const config = { 
-                age: document.getElementById('ageActuel').value, 
-                capital: document.getElementById('capitalInitial').value, 
-                allocationInitiale: allocationInitiale,
-                phases: phases, 
-                modeNet: modeNet 
-            };
+            const config = { age: document.getElementById('ageActuel').value, capital: document.getElementById('capitalInitial').value, allocationInitiale, phases, modeNet };
             const json = JSON.stringify(config, null, 2);
-
-            if ('showSaveFilePicker' in window) {
-                try {
-                    const handle = await window.showSaveFilePicker({
-                        suggestedName: 'ma_strategie_pea.json',
-                        types: [{ description: 'Fichier JSON', accept: { 'application/json': ['.json'] } }]
-                    });
-                    const writable = await handle.createWritable();
-                    await writable.write(json);
-                    await writable.close();
-                    showToast("✅ Fichier enregistré avec succès");
-                    return;
-                } catch (err) {
-                    if (err.name === 'AbortError') return;
-                }
-            }
-
             const blob = new Blob([json], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = "strategie_pea.json";
-            document.body.appendChild(a);
-            a.click();
+            a.href = url; a.download = "strategie_pea.json";
+            document.body.appendChild(a); a.click();
             setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
-            showToast("📥 Téléchargé (voir dossier Téléchargements)");
+            showToast("📥 Fichier exporté");
         }
 
         function importFromFile(event) {
@@ -830,24 +779,19 @@
                     allocationInitiale = config.allocationInitiale || allocationInitiale;
                     phases = config.phases;
                     setMode(config.modeNet || false);
-                    renderAllocationInitiale();
-                    renderPhases(); calculer();
-                    toggleTab('main');
-                    showToast("✅ Stratégie chargée !");
+                    renderAllocationInitiale(); renderPhases(); calculer();
+                    toggleTab('main'); showToast("✅ Stratégie chargée !");
                 } catch (err) { showToast("❌ Fichier corrompu"); }
             };
             reader.readAsText(file);
         }
 
         function resetConfiguration() { 
-            if(confirm("Effacer tout ?")) { 
-                localStorage.removeItem('pea_v12_store'); 
-                location.reload(); 
-            } 
+            if(confirm("Effacer tout ?")) { localStorage.removeItem('pea_v13_store'); location.reload(); } 
         }
 
         window.onload = () => {
-            const saved = localStorage.getItem('pea_v12_store');
+            const saved = localStorage.getItem('pea_v13_store');
             if (saved) {
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;
@@ -856,9 +800,7 @@
                 phases = config.phases;
                 setMode(config.modeNet || false);
             }
-            renderAllocationInitiale();
-            renderPhases(); 
-            calculer();
+            renderAllocationInitiale(); renderPhases(); calculer();
         };
     </script>
 </body>

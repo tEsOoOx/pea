@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Flexible</title>
+    <title>Stratège PEA Pro - Clonage Intelligent</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -181,8 +181,9 @@
                 <div id="allocationInitialeConteneur"></div>
                 <div id="phasesConteneur" class="space-y-6"></div>
 
-                <button onclick="ajouterPhase()" class="w-full py-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-[11px] border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition-all tracking-widest">
-                    + AJOUTER UNE NOUVELLE PHASE
+                <button onclick="ajouterPhase()" class="w-full py-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-[11px] border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition-all tracking-widest flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                    AJOUTER UNE PHASE (CLONE LA PRÉCÉDENTE)
                 </button>
 
                 <div class="card p-5 bg-white border-t-4 border-slate-900 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
@@ -237,7 +238,7 @@
         const UNITES_DUREE = [{ id: "ans", label: "ans" }, { id: "mois", label: "mois" }];
 
         let allocationInitiale = {
-            mode: "detail", // "detail" ou "global"
+            mode: "detail", 
             poches: [
                 { id: 991, nom: "Poche ETF", pct: 70, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
                 { id: 992, nom: "Poche Actions", pct: 30, investissements: [{ id: 9921, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
@@ -300,7 +301,6 @@
         function updateLiveAmounts() {
             const capIni = parseNum(document.getElementById('capitalInitial').value);
             
-            // Initiale
             if(allocationInitiale.mode === "detail") {
                 allocationInitiale.poches.forEach(poc => {
                     const bP = capIni * (parseNum(poc.pct)/100);
@@ -320,7 +320,6 @@
                 });
             }
 
-            // Phases
             phases.forEach(p => {
                 const budget = parseNum(p.budget);
                 if(p.mode === "detail") {
@@ -344,7 +343,7 @@
             });
         }
 
-        // --- RENDU ALLOCATION INITIALE ---
+        // --- ALLOCATION INITIALE ---
         function renderAllocationInitiale() {
             const cont = document.getElementById('allocationInitialeConteneur');
             const capIni = parseNum(document.getElementById('capitalInitial').value);
@@ -396,7 +395,7 @@
             </div>`;
         }
 
-        // --- RENDU PHASES ---
+        // --- PHASES ---
         function renderPhases() {
             const cont = document.getElementById('phasesConteneur');
             cont.innerHTML = phases.map(p => {
@@ -467,12 +466,10 @@
             </div>`;
         }
 
-        // --- HELPER RENDU ITEM (ACTIF) ---
         function renderItem(inv, parentId, type, baseAmount, phaseId = null) {
             const vInv = baseAmount * (parseNum(inv.pct)/100);
             const isPhase = type.startsWith('phase');
             const isGlobal = type.endsWith('global');
-            
             let colorClass = isPhase ? 'indigo' : 'emerald';
             let bgClass = isPhase ? 'bg-white' : 'bg-slate-50';
             let idPrefix = isGlobal ? `eur-glob-${inv.id}` : `eur-inv-${inv.id}`;
@@ -524,7 +521,7 @@
             </div>`;
         }
 
-        // --- LOGIQUE GESTION DES MODES ---
+        // --- GESTION DES MODES ---
         function setInitMode(m) { allocationInitiale.mode = m; renderAllocationInitiale(); handleParamChange(); }
         function setPhaseMode(pid, m) { 
             const p = phases.find(x => x.id === pid);
@@ -553,7 +550,7 @@
         function supprimerInitActif(pid, iid) { const poc = allocationInitiale.poches.find(x=>x.id===pid); poc.investissements = poc.investissements.filter(x=>x.id!==iid); renderAllocationInitiale(); handleParamChange(); }
         function supprimerInitActifGlobal(iid) { allocationInitiale.listeGlobale = allocationInitiale.listeGlobale.filter(x=>x.id!==iid); renderAllocationInitiale(); handleParamChange(); }
 
-        // --- LOGIQUE DATA PHASES ---
+        // --- LOGIQUE DATA PHASES & CLONAGE ---
         function updatePhaseData(id, f, v) { const p = phases.find(x=>x.id===id); if(p) { p[f]=v; handleParamChange(); } }
         function updatePocheData(pid, pocid, f, v) { const p = phases.find(x=>x.id===pid); const poc = p?.poches.find(x=>x.id===pocid); if(poc) { poc[f]=v; handleParamChange(); } }
         function updateInvData(pid, pocid, iid, f, v) {
@@ -573,15 +570,38 @@
                 else inv[f]=v; handleParamChange();
             }
         }
+
+        // FONCTION CLONAGE CORRIGÉE
         function ajouterPhase() {
+            const lastPhase = phases[phases.length - 1];
             const newId = Date.now();
-            phases.push({
-                id: newId, nom: `Phase ${phases.length + 1}`, duree: 10, uniteDuree: "ans", budget: 1000, frequence: "mensuel", mode: "global",
-                poches: [{ id: newId+1, nom: "Poche ETF", pct: 100, investissements: [{ id: newId+2, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] }],
-                listeGlobale: [{ id: newId+3, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }]
-            });
-            renderPhases(); handleParamChange();
+            
+            // On clone la structure de la dernière phase
+            const phaseClonee = JSON.parse(JSON.stringify(lastPhase));
+            
+            // On met à jour les propriétés d'identité
+            phaseClonee.id = newId;
+            phaseClonee.nom = `Phase ${phases.length + 1}`;
+            
+            // On regenère des IDs uniques pour les éléments imbriqués du clone
+            if(phaseClonee.poches) {
+                phaseClonee.poches.forEach((poc, idx) => {
+                    poc.id = newId + (idx * 100);
+                    if(poc.investissements) {
+                        poc.investissements.forEach((inv, iidx) => inv.id = newId + (idx * 100) + iidx + 1);
+                    }
+                });
+            }
+            if(phaseClonee.listeGlobale) {
+                phaseClonee.listeGlobale.forEach((inv, iidx) => inv.id = newId + 500 + iidx);
+            }
+
+            phases.push(phaseClonee);
+            renderPhases(); 
+            handleParamChange();
+            showToast("✨ Nouvelle phase clonée !");
         }
+
         function supprimerPhase(id) { if(phases.length > 1) { phases = phases.filter(x=>x.id!==id); renderPhases(); handleParamChange(); } }
         function ajouterActif(pid, pocid) { phases.find(x=>x.id===pid).poches.find(x=>x.id===pocid).investissements.push({id:Date.now(), nom:"iShares MSCI World Swap PEA", pct:0, rendement:12.8}); renderPhases(); }
         function ajouterActifGlobal(pid) { phases.find(x=>x.id===pid).listeGlobale.push({id:Date.now(), nom:"iShares MSCI World Swap PEA", pct:0, rendement:12.8}); renderPhases(); }
@@ -602,15 +622,12 @@
             handleParamChange(); 
         }
 
-        // --- CŒUR DE CALCUL ---
         function calculer() {
             let ageAct = parseNum(document.getElementById('ageActuel').value);
             let capIni = parseNum(document.getElementById('capitalInitial').value);
             let totalInvesti = capIni;
-            
             let actifsFinaux = [];
 
-            // 1. Placement initial
             const setupInitial = allocationInitiale.mode === "detail" ? 
                 allocationInitiale.poches.flatMap(p => p.investissements.map(i => ({...i, pct: (parseNum(p.pct)/100)*(parseNum(i.pct)/100)}))) :
                 allocationInitiale.listeGlobale.map(i => ({...i, pct: parseNum(i.pct)/100}));
@@ -630,21 +647,17 @@
                 const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
                 const budget = parseNum(p.budget);
 
-                // Extraction de la stratégie de versement de la phase
                 const setupPhase = p.mode === "detail" ?
                     p.poches.flatMap(poc => poc.investissements.map(i => ({...i, pct: (parseNum(poc.pct)/100)*(parseNum(i.pct)/100)}))) :
                     p.listeGlobale.map(i => ({...i, pct: parseNum(i.pct)/100}));
 
                 for (let m = 1; m <= dureeMois; m++) {
                     moisTotalEcoule++;
-                    
-                    // Croissance
                     actifsFinaux.forEach(ac => {
                         const rMens = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
                         ac.valeur *= (1 + rMens);
                     });
 
-                    // Versement
                     let versementMois = false;
                     if(freq.id === "ponctuel") versementMois = (m === 1);
                     else versementMois = ((m - 1) % freq.div === 0);
@@ -659,12 +672,10 @@
                         });
                     }
 
-                    // Snapshot annuel
                     if (moisTotalEcoule % 12 === 0 || m === dureeMois) {
                         let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
                         let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
-                        let agePoint = ageAct + Math.floor(moisTotalEcoule / 12);
-                        dataPoints.push({ age: agePoint, cap: tB - tx, inv: totalInvesti });
+                        dataPoints.push({ age: ageAct + Math.floor(moisTotalEcoule/12), cap: tB - tx, inv: totalInvesti });
                     }
                 }
             });
@@ -690,43 +701,26 @@
             const ctxP = document.getElementById('chartPie').getContext('2d');
             if (lineChart) lineChart.destroy();
             if (pieChart) pieChart.destroy();
-            
             lineChart = new Chart(ctxL, {
                 type: 'line',
                 data: {
                     labels: data.map(d => d.age),
-                    datasets: [
-                        { label: 'Capital Net', data: data.map(d => d.cap), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.3, pointRadius: 0 },
-                        { label: 'Total Investi', data: data.map(d => d.inv), borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.1, pointRadius: 0 }
-                    ]
+                    datasets: [{ label: 'Capital Net', data: data.map(d => d.cap), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+                               { label: 'Total Investi', data: data.map(d => d.inv), borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.1, pointRadius: 0 }]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false }, tooltip: { intersect: false, mode: 'index' } },
-                    scales: { y: { ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } }, x: { ticks: { font: { size: 9 } } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { intersect: false, mode: 'index' } },
+                           scales: { y: { ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } }, x: { ticks: { font: { size: 9 } } } } }
             });
-
             const av = actifs.filter(a => a.valeur > 1);
             pieChart = new Chart(ctxP, {
                 type: 'doughnut',
-                data: { 
-                    labels: av.map(a => a.nom), 
-                    datasets: [{ data: av.map(a => a.valeur), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316'] }] 
-                },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, cutout: '65%', 
-                    plugins: { legend: { position: 'bottom', labels: { font: { size: 9, weight: 'bold' }, boxWidth: 10, usePointStyle: true } } } 
-                }
+                data: { labels: av.map(a => a.nom), datasets: [{ data: av.map(a => a.valeur), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316'] }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: { size: 9, weight: 'bold' }, boxWidth: 10, usePointStyle: true } } } }
             });
         }
 
-        // --- EXPORT / IMPORT ---
         function copierRapport() {
-            let texte = `📊 RAPPORT DE STRATÉGIE PEA\n-----------------------------------\n`;
-            texte += `Capital Final : ${document.getElementById('totalFinal').innerText}\n`;
-            texte += `Total Investi : ${document.getElementById('bilanInvesti').innerText}\n`;
-            texte += `Gain Net : ${document.getElementById('bilanGain').innerText}\n`;
+            let texte = `📊 RAPPORT PEA\n---\nFinal: ${document.getElementById('totalFinal').innerText}\nInvesti: ${document.getElementById('bilanInvesti').innerText}\nGain: ${document.getElementById('bilanGain').innerText}`;
             const el = document.createElement('textarea'); el.value = texte; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
             showToast("✅ Rapport copié !");
         }
@@ -735,7 +729,7 @@
             const toast = document.createElement('div');
             toast.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold text-[11px] shadow-2xl z-[1000] animate-bounce";
             toast.innerText = msg; document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 2500);
         }
 
         function exportToFile() {
@@ -751,11 +745,8 @@
                 const config = JSON.parse(e.target.result);
                 document.getElementById('ageActuel').value = config.age;
                 document.getElementById('capitalInitial').value = config.capital;
-                allocationInitiale = config.allocationInitiale;
-                phases = config.phases;
-                setMode(config.modeNet);
-                renderAllocationInitiale(); renderPhases(); calculer();
-                toggleTab('main');
+                allocationInitiale = config.allocationInitiale; phases = config.phases; setMode(config.modeNet || false);
+                renderAllocationInitiale(); renderPhases(); calculer(); toggleTab('main');
             };
             reader.readAsText(event.target.files[0]);
         }
@@ -768,9 +759,7 @@
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;
                 document.getElementById('capitalInitial').value = config.capital;
-                allocationInitiale = config.allocationInitiale;
-                phases = config.phases;
-                setMode(config.modeNet || false);
+                allocationInitiale = config.allocationInitiale; phases = config.phases; setMode(config.modeNet || false);
             }
             renderAllocationInitiale(); renderPhases(); calculer();
         };

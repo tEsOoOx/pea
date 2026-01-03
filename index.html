@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Versements Libres</title>
+    <title>Stratège PEA Pro - Flexible</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -98,6 +98,24 @@
         .mode-btn.inactive {
             color: #94a3b8;
         }
+
+        .view-toggle {
+            display: flex;
+            background: #e2e8f0;
+            padding: 2px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 800;
+        }
+        .view-toggle button {
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .view-toggle button.active {
+            background: white;
+            color: #4f46e5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body class="p-4 md:p-6 lg:p-8 pb-24">
@@ -138,7 +156,6 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <div class="card p-6 text-center space-y-4">
                     <h2 class="text-lg font-800">Charger un fichier</h2>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Importer une stratégie existante</p>
                     <input type="file" id="importFile" onchange="importFromFile(event)" class="text-xs w-full p-2 border rounded-lg"/>
                 </div>
                 <div class="card p-6 border-red-100 bg-red-50/30 text-center flex flex-col justify-center">
@@ -149,26 +166,23 @@
 
         <div id="view-main" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-7 space-y-6">
-                <!-- Configuration Initiale -->
-                <div class="space-y-4">
-                    <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-slate-900">
-                        <div class="space-y-1 text-center">
-                            <label class="stat-label">Âge actuel</label>
-                            <input type="number" id="ageActuel" value="30" oninput="handleParamChange()" class="input-field w-full">
-                        </div>
-                        <div class="space-y-1 text-center">
-                            <label class="stat-label">Capital initial (€)</label>
-                            <input type="number" id="capitalInitial" value="5000" oninput="handleParamChange()" class="input-field w-full text-indigo-600">
-                        </div>
+                
+                <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-slate-900">
+                    <div class="space-y-1 text-center">
+                        <label class="stat-label">Âge actuel</label>
+                        <input type="number" id="ageActuel" value="30" oninput="handleParamChange()" class="input-field w-full">
                     </div>
-
-                    <div id="allocationInitialeConteneur"></div>
+                    <div class="space-y-1 text-center">
+                        <label class="stat-label">Capital initial (€)</label>
+                        <input type="number" id="capitalInitial" value="5000" oninput="handleParamChange()" class="input-field w-full text-indigo-600">
+                    </div>
                 </div>
 
+                <div id="allocationInitialeConteneur"></div>
                 <div id="phasesConteneur" class="space-y-6"></div>
 
                 <button onclick="ajouterPhase()" class="w-full py-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-[11px] border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition-all tracking-widest">
-                    + CLONER LA DERNIÈRE PHASE
+                    + AJOUTER UNE NOUVELLE PHASE
                 </button>
 
                 <div class="card p-5 bg-white border-t-4 border-slate-900 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
@@ -203,7 +217,6 @@
             { nom: "ETF S&P 500 (PEA)", rendement: 13.6 },
             { nom: "BNP Easy STOXX Europe 600", rendement: 10.4 },
             { nom: "Amundi PEA Asie Emergente", rendement: 5.8 },
-            { nom: "Inpost", rendement: 18.2 },
             { nom: "Air Liquide", rendement: 12.4 },
             { nom: "Schneider Electric", rendement: 16.7 },
             { nom: "ASML", rendement: 22.1 },
@@ -218,26 +231,33 @@
             { id: "trimestriel", label: "/trimestre", div: 3 },
             { id: "semestriel", label: "/semestre", div: 6 },
             { id: "annuel", label: "/an", div: 12 },
-            { id: "ponctuel", label: "en une fois", div: 0 } // div 0 = logique spéciale
+            { id: "ponctuel", label: "en une fois", div: 0 }
         ];
 
-        const UNITES_DUREE = [
-            { id: "ans", label: "ans" },
-            { id: "mois", label: "mois" }
-        ];
+        const UNITES_DUREE = [{ id: "ans", label: "ans" }, { id: "mois", label: "mois" }];
 
         let allocationInitiale = {
+            mode: "detail", // "detail" ou "global"
             poches: [
                 { id: 991, nom: "Poche ETF", pct: 70, investissements: [{ id: 9911, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
                 { id: 992, nom: "Poche Actions", pct: 30, investissements: [{ id: 9921, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
+            ],
+            listeGlobale: [
+                { id: 995, nom: "iShares MSCI World Swap PEA", pct: 70, rendement: 12.8 },
+                { id: 996, nom: "Air Liquide", pct: 30, rendement: 12.4 }
             ]
         };
 
         let phases = [{
             id: 1, nom: "Phase 1", duree: 20, uniteDuree: "ans", budget: 1000, frequence: "mensuel",
+            mode: "detail",
             poches: [
                 { id: 11, nom: "Poche ETF", pct: 70, investissements: [{ id: 111, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] },
                 { id: 12, nom: "Poche Actions", pct: 30, investissements: [{ id: 121, nom: "Air Liquide", pct: 100, rendement: 12.4 }] }
+            ],
+            listeGlobale: [
+                { id: 115, nom: "iShares MSCI World Swap PEA", pct: 70, rendement: 12.8 },
+                { id: 116, nom: "Air Liquide", pct: 30, rendement: 12.4 }
             ]
         }];
 
@@ -272,283 +292,301 @@
                     phases: phases,
                     modeNet: modeNet
                 };
-                localStorage.setItem('pea_v13_store', JSON.stringify(config));
+                localStorage.setItem('pea_v14_store', JSON.stringify(config));
                 if (el) el.classList.remove('visible');
             }, 1000);
         }
 
         function updateLiveAmounts() {
             const capIni = parseNum(document.getElementById('capitalInitial').value);
-            allocationInitiale.poches.forEach(poc => {
-                const bP = capIni * (parseNum(poc.pct)/100);
-                const elPoc = document.getElementById(`eur-poche-init-${poc.id}`);
-                if (elPoc) elPoc.innerText = `${Math.round(bP)}€`;
-                poc.investissements.forEach(inv => {
-                    const valInv = bP * (parseNum(inv.pct)/100);
-                    const elInv = document.getElementById(`eur-inv-init-${inv.id}`);
-                    if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
-                });
-            });
-
-            phases.forEach(p => {
-                const budget = parseNum(p.budget);
-                p.poches.forEach(poc => {
-                    const bP = budget * (parseNum(poc.pct)/100);
-                    const elPoc = document.getElementById(`eur-poche-${poc.id}`);
+            
+            // Initiale
+            if(allocationInitiale.mode === "detail") {
+                allocationInitiale.poches.forEach(poc => {
+                    const bP = capIni * (parseNum(poc.pct)/100);
+                    const elPoc = document.getElementById(`eur-poche-init-${poc.id}`);
                     if (elPoc) elPoc.innerText = `${Math.round(bP)}€`;
                     poc.investissements.forEach(inv => {
                         const valInv = bP * (parseNum(inv.pct)/100);
-                        const elInv = document.getElementById(`eur-inv-${inv.id}`);
+                        const elInv = document.getElementById(`eur-inv-init-${inv.id}`);
                         if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
                     });
                 });
+            } else {
+                allocationInitiale.listeGlobale.forEach(inv => {
+                    const valInv = capIni * (parseNum(inv.pct)/100);
+                    const elInv = document.getElementById(`eur-glob-init-${inv.id}`);
+                    if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
+                });
+            }
+
+            // Phases
+            phases.forEach(p => {
+                const budget = parseNum(p.budget);
+                if(p.mode === "detail") {
+                    p.poches.forEach(poc => {
+                        const bP = budget * (parseNum(poc.pct)/100);
+                        const elPoc = document.getElementById(`eur-poche-${poc.id}`);
+                        if (elPoc) elPoc.innerText = `${Math.round(bP)}€`;
+                        poc.investissements.forEach(inv => {
+                            const valInv = bP * (parseNum(inv.pct)/100);
+                            const elInv = document.getElementById(`eur-inv-${inv.id}`);
+                            if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
+                        });
+                    });
+                } else {
+                    p.listeGlobale.forEach(inv => {
+                        const valInv = budget * (parseNum(inv.pct)/100);
+                        const elInv = document.getElementById(`eur-glob-${inv.id}`);
+                        if (elInv) elInv.innerText = `(${Math.round(valInv)}€)`;
+                    });
+                }
             });
         }
 
+        // --- RENDU ALLOCATION INITIALE ---
         function renderAllocationInitiale() {
             const cont = document.getElementById('allocationInitialeConteneur');
             const capIni = parseNum(document.getElementById('capitalInitial').value);
+            const mode = allocationInitiale.mode;
             
             cont.innerHTML = `
             <div class="card overflow-hidden border-t-4 border-emerald-500 bg-emerald-50/10">
-                <div class="p-3 bg-emerald-50/50 border-b border-emerald-100 flex justify-center items-center gap-2">
+                <div class="p-3 bg-emerald-50/50 border-b border-emerald-100 flex justify-between items-center px-4">
                     <span class="font-800 text-[10px] text-emerald-700 tracking-widest uppercase">Répartition Initiale</span>
+                    <div class="view-toggle">
+                        <button onclick="setInitMode('detail')" class="${mode === 'detail' ? 'active' : ''}">DÉTAILLÉ</button>
+                        <button onclick="setInitMode('global')" class="${mode === 'global' ? 'active' : ''}">GLOBAL</button>
+                    </div>
                 </div>
-                <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${allocationInitiale.poches.map(poc => {
-                        const bP = capIni * (parseNum(poc.pct)/100);
-                        return `
-                        <div class="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-3">
-                                <input type="text" value="${poc.nom}" oninput="updateInitPocheData(${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
-                                <div class="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
-                                    <input type="number" value="${poc.pct}" oninput="updateInitPocheData(${poc.id}, 'pct', this.value)" class="bg-transparent w-6 text-center font-800 outline-none text-[10px]">
-                                    <span class="text-[8px]">%</span>
-                                    <span id="eur-poche-init-${poc.id}" class="text-[9px] font-bold border-l border-emerald-200 ml-1 pl-1.5">${Math.round(bP)}€</span>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                ${poc.investissements.map(inv => {
-                                    const vInv = bP * (parseNum(inv.pct)/100);
-                                    return `
-                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1.5">
-                                        <div class="flex justify-between">
-                                            <select onchange="updateInitInvData(${poc.id}, ${inv.id}, 'nom', this.value)" class="custom-select text-[9px] font-bold outline-none flex-grow bg-transparent">
-                                                ${LISTE_ACTIFS.map(a => `<option value="${a.nom}" ${inv.nom === a.nom ? 'selected' : ''}>${a.nom}</option>`).join('')}
-                                            </select>
-                                            <button onclick="supprimerInitActif(${poc.id}, ${inv.id})" class="text-slate-300 ml-2">×</button>
-                                        </div>
-                                        <div class="flex justify-between items-center text-[9px]">
-                                            <div class="flex items-center gap-1 bg-white px-1.5 py-0.5 rounded shadow-sm border border-slate-100">
-                                                <span class="text-slate-400 font-bold">PART:</span>
-                                                <input type="number" value="${inv.pct}" oninput="updateInitInvData(${poc.id}, ${inv.id}, 'pct', this.value)" class="w-6 text-center font-800 text-emerald-600 bg-transparent outline-none">
-                                                <span id="eur-inv-init-${inv.id}" class="text-emerald-900 ml-1">(${Math.round(vInv)}€)</span>
-                                            </div>
-                                            <div class="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                                <span class="text-emerald-400 font-bold">TAUX:</span>
-                                                <input type="number" value="${inv.rendement}" oninput="updateInitInvData(${poc.id}, ${inv.id}, 'rendement', this.value)" class="w-8 text-center font-800 text-emerald-600 bg-transparent outline-none">
-                                                <span class="text-emerald-400">%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    `;
-                                }).join('')}
-                                <button onclick="ajouterInitActif(${poc.id})" class="w-full py-1 border border-dashed border-emerald-200 rounded text-[8px] font-bold text-emerald-400">+ ACTIF</button>
-                            </div>
-                        </div>
-                        `;
-                    }).join('')}
+                <div class="p-4">
+                    ${mode === 'detail' ? renderInitDetail(capIni) : renderInitGlobal(capIni)}
                 </div>
             </div>
             `;
         }
 
+        function renderInitDetail(capIni) {
+            return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${allocationInitiale.poches.map(poc => {
+                    const bP = capIni * (parseNum(poc.pct)/100);
+                    return `
+                    <div class="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <input type="text" value="${poc.nom}" oninput="updateInitPocheData(${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
+                            <div class="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
+                                <input type="number" value="${poc.pct}" oninput="updateInitPocheData(${poc.id}, 'pct', this.value)" class="bg-transparent w-6 text-center font-800 outline-none text-[10px]">
+                                <span class="text-[8px]">%</span>
+                                <span id="eur-poche-init-${poc.id}" class="text-[9px] font-bold border-l border-emerald-200 ml-1 pl-1.5">${Math.round(bP)}€</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            ${poc.investissements.map(inv => renderItem(inv, poc.id, 'init-detail', bP)).join('')}
+                            <button onclick="ajouterInitActif(${poc.id})" class="w-full py-1 border border-dashed border-emerald-200 rounded text-[8px] font-bold text-emerald-400">+ ACTIF</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
+        function renderInitGlobal(capIni) {
+            return `<div class="bg-white rounded-xl p-4 border border-emerald-100 shadow-sm space-y-2">
+                ${allocationInitiale.listeGlobale.map(inv => renderItem(inv, null, 'init-global', capIni)).join('')}
+                <button onclick="ajouterInitActifGlobal()" class="w-full py-2 border border-dashed border-emerald-200 rounded text-[9px] font-bold text-emerald-400">+ AJOUTER UN ACTIF À LA LISTE</button>
+            </div>`;
+        }
+
+        // --- RENDU PHASES ---
         function renderPhases() {
             const cont = document.getElementById('phasesConteneur');
             cont.innerHTML = phases.map(p => {
                 const budget = parseNum(p.budget);
+                const mode = p.mode || "detail";
                 return `
                 <div class="card overflow-hidden border-t-4 border-indigo-500 relative">
                     <button onclick="supprimerPhase(${p.id})" class="absolute top-3 right-3 text-slate-300 font-bold hover:text-red-400">×</button>
-                    <div class="p-3 bg-slate-50 border-b border-slate-100 flex flex-wrap justify-center gap-3">
-                        <input type="text" value="${p.nom}" oninput="updatePhaseData(${p.id}, 'nom', this.value)" class="bg-transparent font-800 text-xs outline-none text-center">
-                        <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
-                            <span class="stat-label">Durée:</span>
-                            <input type="number" value="${p.duree}" oninput="updatePhaseData(${p.id}, 'duree', this.value)" class="w-10 font-bold text-center outline-none">
-                            <select onchange="updatePhaseData(${p.id}, 'uniteDuree', this.value)" class="bg-transparent font-bold text-slate-400 outline-none cursor-pointer">
-                                ${UNITES_DUREE.map(u => `<option value="${u.id}" ${p.uniteDuree === u.id ? 'selected' : ''}>${u.label}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
-                            <span class="stat-label">Budget:</span>
-                            <input type="number" value="${p.budget}" oninput="updatePhaseData(${p.id}, 'budget', this.value)" class="w-16 font-800 text-indigo-600 outline-none text-center">
-                            <select onchange="updatePhaseData(${p.id}, 'frequence', this.value)" class="bg-transparent font-bold text-indigo-400 outline-none">
-                                ${FREQUENCES.map(f => `<option value="${f.id}" ${p.frequence === f.id ? 'selected' : ''}>${f.label}</option>`).join('')}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${p.poches.map(poc => {
-                            const bP = budget * (parseNum(poc.pct)/100);
-                            return `
-                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                <div class="flex justify-between items-center mb-3">
-                                    <input type="text" value="${poc.nom}" oninput="updatePocheData(${p.id}, ${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
-                                    <div class="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
-                                        <input type="number" value="${poc.pct}" oninput="updatePocheData(${p.id}, ${poc.id}, 'pct', this.value)" class="bg-transparent w-6 text-center font-800 outline-none text-[10px]">
-                                        <span class="text-[8px]">%</span>
-                                        <span id="eur-poche-${poc.id}" class="text-[9px] font-bold border-l border-indigo-200 ml-1 pl-1.5">${Math.round(bP)}€</span>
-                                    </div>
-                                </div>
-                                <div class="space-y-2">
-                                    ${poc.investissements.map(inv => {
-                                        const vInv = bP * (parseNum(inv.pct)/100);
-                                        return `
-                                        <div class="bg-white p-2 rounded-lg shadow-sm border border-slate-50 space-y-1.5">
-                                            <div class="flex justify-between">
-                                                <select onchange="updateInvData(${p.id}, ${poc.id}, ${inv.id}, 'nom', this.value)" class="custom-select text-[9px] font-bold outline-none flex-grow">
-                                                    ${LISTE_ACTIFS.map(a => `<option value="${a.nom}" ${inv.nom === a.nom ? 'selected' : ''}>${a.nom}</option>`).join('')}
-                                                </select>
-                                                <button onclick="supprimerActif(${p.id}, ${poc.id}, ${inv.id})" class="text-slate-200 ml-2">×</button>
-                                            </div>
-                                            <div class="flex justify-between items-center text-[9px]">
-                                                <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded">
-                                                    <span class="text-slate-400 font-bold">PART:</span>
-                                                    <input type="number" value="${inv.pct}" oninput="updateInvData(${p.id}, ${poc.id}, ${inv.id}, 'pct', this.value)" class="w-6 text-center font-800 text-indigo-600 bg-transparent outline-none">
-                                                    <span id="eur-inv-${inv.id}" class="text-indigo-900 ml-1">(${Math.round(vInv)}€)</span>
-                                                </div>
-                                                <div class="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                                    <span class="text-emerald-400 font-bold">TAUX:</span>
-                                                    <input type="number" value="${inv.rendement}" oninput="updateInvData(${p.id}, ${poc.id}, ${inv.id}, 'rendement', this.value)" class="w-8 text-center font-800 text-emerald-600 bg-transparent outline-none">
-                                                    <span class="text-emerald-400">%</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        `;
-                                    }).join('')}
-                                    <button onclick="ajouterActif(${p.id}, ${poc.id})" class="w-full py-1 border border-dashed border-slate-200 rounded text-[8px] font-bold text-slate-400">+ ACTIF</button>
-                                </div>
+                    <div class="p-3 bg-slate-50 border-b border-slate-100 flex flex-wrap justify-between items-center px-4 gap-3">
+                        <div class="flex gap-3">
+                            <input type="text" value="${p.nom}" oninput="updatePhaseData(${p.id}, 'nom', this.value)" class="bg-transparent font-800 text-xs outline-none text-center">
+                            <div class="view-toggle">
+                                <button onclick="setPhaseMode(${p.id}, 'detail')" class="${mode === 'detail' ? 'active' : ''}">DÉTAILLÉ</button>
+                                <button onclick="setPhaseMode(${p.id}, 'global')" class="${mode === 'global' ? 'active' : ''}">GLOBAL</button>
                             </div>
-                            `;
-                        }).join('')}
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
+                                <span class="stat-label">Durée:</span>
+                                <input type="number" value="${p.duree}" oninput="updatePhaseData(${p.id}, 'duree', this.value)" class="w-10 font-bold text-center outline-none">
+                                <select onchange="updatePhaseData(${p.id}, 'uniteDuree', this.value)" class="bg-transparent font-bold text-slate-400 outline-none cursor-pointer">
+                                    ${UNITES_DUREE.map(u => `<option value="${u.id}" ${p.uniteDuree === u.id ? 'selected' : ''}>${u.label}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded shadow-sm text-[10px]">
+                                <span class="stat-label">Budget:</span>
+                                <input type="number" value="${p.budget}" oninput="updatePhaseData(${p.id}, 'budget', this.value)" class="w-16 font-800 text-indigo-600 outline-none text-center">
+                                <select onchange="updatePhaseData(${p.id}, 'frequence', this.value)" class="bg-transparent font-bold text-indigo-400 outline-none">
+                                    ${FREQUENCES.map(f => `<option value="${f.id}" ${p.frequence === f.id ? 'selected' : ''}>${f.label}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                `;
+                    <div class="p-4">
+                        ${mode === 'detail' ? renderPhaseDetail(p, budget) : renderPhaseGlobal(p, budget)}
+                    </div>
+                </div>`;
             }).join('');
         }
 
-        // LOGIQUE ALLOCATION INITIALE
-        function updateInitPocheData(pocId, field, val) {
-            const poc = allocationInitiale.poches.find(x => x.id === pocId);
-            if (poc) { poc[field] = val; handleParamChange(); }
+        function renderPhaseDetail(p, budget) {
+            return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${p.poches.map(poc => {
+                    const bP = budget * (parseNum(poc.pct)/100);
+                    return `
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <input type="text" value="${poc.nom}" oninput="updatePocheData(${p.id}, ${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
+                            <div class="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
+                                <input type="number" value="${poc.pct}" oninput="updatePocheData(${p.id}, ${poc.id}, 'pct', this.value)" class="bg-transparent w-6 text-center font-800 outline-none text-[10px]">
+                                <span class="text-[8px]">%</span>
+                                <span id="eur-poche-${poc.id}" class="text-[9px] font-bold border-l border-indigo-200 ml-1 pl-1.5">${Math.round(bP)}€</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            ${poc.investissements.map(inv => renderItem(inv, poc.id, 'phase-detail', bP, p.id)).join('')}
+                            <button onclick="ajouterActif(${p.id}, ${poc.id})" class="w-full py-1 border border-dashed border-slate-200 rounded text-[8px] font-bold text-slate-400">+ ACTIF</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
         }
 
-        function updateInitInvData(pocId, invId, field, val) {
-            const poc = allocationInitiale.poches.find(x => x.id === pocId);
-            if (!poc) return;
-            const inv = poc.investissements.find(x => x.id === invId);
-            if (!inv) return;
+        function renderPhaseGlobal(p, budget) {
+            return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+                ${p.listeGlobale.map(inv => renderItem(inv, null, 'phase-global', budget, p.id)).join('')}
+                <button onclick="ajouterActifGlobal(${p.id})" class="w-full py-2 border border-dashed border-slate-300 rounded text-[9px] font-bold text-slate-500">+ AJOUTER UN ACTIF À LA LISTE GLOBALE</button>
+            </div>`;
+        }
 
-            if (field === 'nom') {
-                inv.nom = val;
-                const ref = LISTE_ACTIFS.find(a => a.nom === val);
-                if (ref) inv.rendement = ref.rendement;
-                renderAllocationInitiale();
+        // --- HELPER RENDU ITEM (ACTIF) ---
+        function renderItem(inv, parentId, type, baseAmount, phaseId = null) {
+            const vInv = baseAmount * (parseNum(inv.pct)/100);
+            const isPhase = type.startsWith('phase');
+            const isGlobal = type.endsWith('global');
+            
+            let colorClass = isPhase ? 'indigo' : 'emerald';
+            let bgClass = isPhase ? 'bg-white' : 'bg-slate-50';
+            let idPrefix = isGlobal ? `eur-glob-${inv.id}` : `eur-inv-${inv.id}`;
+            if(!isPhase) idPrefix = isGlobal ? `eur-glob-init-${inv.id}` : `eur-inv-init-${inv.id}`;
+
+            let onChangeName, onChangePct, onChangeRend, onDel;
+            if(type === 'init-detail') {
+                onChangeName = `updateInitInvData(${parentId}, ${inv.id}, 'nom', this.value)`;
+                onChangePct = `updateInitInvData(${parentId}, ${inv.id}, 'pct', this.value)`;
+                onChangeRend = `updateInitInvData(${parentId}, ${inv.id}, 'rendement', this.value)`;
+                onDel = `supprimerInitActif(${parentId}, ${inv.id})`;
+            } else if(type === 'init-global') {
+                onChangeName = `updateInitInvGlobal(${inv.id}, 'nom', this.value)`;
+                onChangePct = `updateInitInvGlobal(${inv.id}, 'pct', this.value)`;
+                onChangeRend = `updateInitInvGlobal(${inv.id}, 'rendement', this.value)`;
+                onDel = `supprimerInitActifGlobal(${inv.id})`;
+            } else if(type === 'phase-detail') {
+                onChangeName = `updateInvData(${phaseId}, ${parentId}, ${inv.id}, 'nom', this.value)`;
+                onChangePct = `updateInvData(${phaseId}, ${parentId}, ${inv.id}, 'pct', this.value)`;
+                onChangeRend = `updateInvData(${phaseId}, ${parentId}, ${inv.id}, 'rendement', this.value)`;
+                onDel = `supprimerActif(${phaseId}, ${parentId}, ${inv.id})`;
             } else {
-                inv[field] = val;
+                onChangeName = `updateInvGlobal(${phaseId}, ${inv.id}, 'nom', this.value)`;
+                onChangePct = `updateInvGlobal(${phaseId}, ${inv.id}, 'pct', this.value)`;
+                onChangeRend = `updateInvGlobal(${phaseId}, ${inv.id}, 'rendement', this.value)`;
+                onDel = `supprimerActifGlobal(${phaseId}, ${inv.id})`;
             }
-            handleParamChange();
+
+            return `
+            <div class="${bgClass} p-2 rounded-lg border border-slate-100 space-y-1.5 shadow-sm">
+                <div class="flex justify-between">
+                    <select onchange="${onChangeName}" class="custom-select text-[9px] font-bold outline-none flex-grow bg-transparent">
+                        ${LISTE_ACTIFS.map(a => `<option value="${a.nom}" ${inv.nom === a.nom ? 'selected' : ''}>${a.nom}</option>`).join('')}
+                    </select>
+                    <button onclick="${onDel}" class="text-slate-300 ml-2">×</button>
+                </div>
+                <div class="flex justify-between items-center text-[9px]">
+                    <div class="flex items-center gap-1 bg-white px-1.5 py-0.5 rounded shadow-sm border border-slate-100">
+                        <span class="text-slate-400 font-bold">PART:</span>
+                        <input type="number" value="${inv.pct}" oninput="${onChangePct}" class="w-6 text-center font-800 text-${colorClass}-600 bg-transparent outline-none">
+                        <span id="${idPrefix}" class="text-${colorClass}-900 ml-1">(${Math.round(vInv)}€)</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-${colorClass}-50 px-1.5 py-0.5 rounded">
+                        <span class="text-${colorClass}-400 font-bold">TAUX:</span>
+                        <input type="number" value="${inv.rendement}" oninput="${onChangeRend}" class="w-8 text-center font-800 text-${colorClass}-600 bg-transparent outline-none">
+                        <span class="text-${colorClass}-400">%</span>
+                    </div>
+                </div>
+            </div>`;
         }
 
-        function ajouterInitActif(pocId) {
-            const poc = allocationInitiale.poches.find(x => x.id === pocId);
-            if (poc) {
-                poc.investissements.push({ id: Date.now(), nom: "iShares MSCI World Swap PEA", pct: 0, rendement: 12.8 });
-                renderAllocationInitiale();
+        // --- LOGIQUE GESTION DES MODES ---
+        function setInitMode(m) { allocationInitiale.mode = m; renderAllocationInitiale(); handleParamChange(); }
+        function setPhaseMode(pid, m) { 
+            const p = phases.find(x => x.id === pid);
+            if(p) { p.mode = m; renderPhases(); handleParamChange(); }
+        }
+
+        // --- LOGIQUE DATA INITIALE ---
+        function updateInitPocheData(id, f, v) { const p = allocationInitiale.poches.find(x => x.id === id); if(p) { p[f]=v; handleParamChange(); } }
+        function updateInitInvData(pid, iid, f, v) {
+            const poc = allocationInitiale.poches.find(x => x.id === pid);
+            const inv = poc?.investissements.find(x => x.id === iid);
+            if(inv) {
+                if(f==='nom') { inv.nom=v; const r=LISTE_ACTIFS.find(a=>a.nom===v); if(r) inv.rendement=r.rendement; renderAllocationInitiale(); }
+                else inv[f]=v; handleParamChange();
             }
         }
-
-        function supprimerInitActif(pocId, invId) {
-            const poc = allocationInitiale.poches.find(x => x.id === pocId);
-            if (poc) {
-                poc.investissements = poc.investissements.filter(x => x.id !== invId);
-                renderAllocationInitiale(); handleParamChange();
+        function updateInitInvGlobal(iid, f, v) {
+            const inv = allocationInitiale.listeGlobale.find(x => x.id === iid);
+            if(inv) {
+                if(f==='nom') { inv.nom=v; const r=LISTE_ACTIFS.find(a=>a.nom===v); if(r) inv.rendement=r.rendement; renderAllocationInitiale(); }
+                else inv[f]=v; handleParamChange();
             }
         }
+        function ajouterInitActif(pid) { allocationInitiale.poches.find(x=>x.id===pid).investissements.push({id:Date.now(), nom:"iShares MSCI World Swap PEA", pct:0, rendement:12.8}); renderAllocationInitiale(); }
+        function ajouterInitActifGlobal() { allocationInitiale.listeGlobale.push({id:Date.now(), nom:"iShares MSCI World Swap PEA", pct:0, rendement:12.8}); renderAllocationInitiale(); }
+        function supprimerInitActif(pid, iid) { const poc = allocationInitiale.poches.find(x=>x.id===pid); poc.investissements = poc.investissements.filter(x=>x.id!==iid); renderAllocationInitiale(); handleParamChange(); }
+        function supprimerInitActifGlobal(iid) { allocationInitiale.listeGlobale = allocationInitiale.listeGlobale.filter(x=>x.id!==iid); renderAllocationInitiale(); handleParamChange(); }
 
-        // LOGIQUE PHASES
-        function updatePhaseData(id, field, val) {
-            const p = phases.find(x => x.id === id);
-            if (p) { p[field] = val; handleParamChange(); }
-        }
-
-        function updatePocheData(pId, pocId, field, val) {
-            const p = phases.find(x => x.id === pId);
-            if (p) {
-                const poc = p.poches.find(x => x.id === pocId);
-                if (poc) { poc[field] = val; handleParamChange(); }
+        // --- LOGIQUE DATA PHASES ---
+        function updatePhaseData(id, f, v) { const p = phases.find(x=>x.id===id); if(p) { p[f]=v; handleParamChange(); } }
+        function updatePocheData(pid, pocid, f, v) { const p = phases.find(x=>x.id===pid); const poc = p?.poches.find(x=>x.id===pocid); if(poc) { poc[f]=v; handleParamChange(); } }
+        function updateInvData(pid, pocid, iid, f, v) {
+            const p = phases.find(x=>x.id===pid);
+            const poc = p?.poches.find(x=>x.id===pocid);
+            const inv = poc?.investissements.find(x=>x.id===iid);
+            if(inv) {
+                if(f==='nom') { inv.nom=v; const r=LISTE_ACTIFS.find(a=>a.nom===v); if(r) inv.rendement=r.rendement; renderPhases(); }
+                else inv[f]=v; handleParamChange();
             }
         }
-
-        function updateInvData(pId, pocId, invId, field, val) {
-            const p = phases.find(x => x.id === pId);
-            if (!p) return;
-            const poc = p.poches.find(x => x.id === pocId);
-            if (!poc) return;
-            const inv = poc.investissements.find(x => x.id === invId);
-            if (!inv) return;
-
-            if (field === 'nom') {
-                inv.nom = val;
-                const ref = LISTE_ACTIFS.find(a => a.nom === val);
-                if (ref) inv.rendement = ref.rendement;
-                renderPhases();
-            } else {
-                inv[field] = val;
+        function updateInvGlobal(pid, iid, f, v) {
+            const p = phases.find(x=>x.id===pid);
+            const inv = p?.listeGlobale.find(x=>x.id===iid);
+            if(inv) {
+                if(f==='nom') { inv.nom=v; const r=LISTE_ACTIFS.find(a=>a.nom===v); if(r) inv.rendement=r.rendement; renderPhases(); }
+                else inv[f]=v; handleParamChange();
             }
-            handleParamChange();
         }
-
         function ajouterPhase() {
-            const lastPhase = phases[phases.length - 1];
             const newId = Date.now();
-            const clonedPhase = JSON.parse(JSON.stringify(lastPhase));
-            clonedPhase.id = newId;
-            clonedPhase.nom = `Phase ${phases.length + 1}`;
-            clonedPhase.poches.forEach((poc, i) => {
-                poc.id = newId + (i + 1);
-                poc.investissements.forEach((inv, j) => {
-                    inv.id = newId + 100 + (i * 10) + j;
-                });
+            phases.push({
+                id: newId, nom: `Phase ${phases.length + 1}`, duree: 10, uniteDuree: "ans", budget: 1000, frequence: "mensuel", mode: "global",
+                poches: [{ id: newId+1, nom: "Poche ETF", pct: 100, investissements: [{ id: newId+2, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }] }],
+                listeGlobale: [{ id: newId+3, nom: "iShares MSCI World Swap PEA", pct: 100, rendement: 12.8 }]
             });
-            phases.push(clonedPhase);
-            renderPhases(); 
-            handleParamChange();
+            renderPhases(); handleParamChange();
         }
-
-        function supprimerPhase(id) { if (phases.length > 1) { phases = phases.filter(x => x.id !== id); renderPhases(); handleParamChange(); } }
-        
-        function ajouterActif(pId, pocId) { 
-            const p = phases.find(x => x.id === pId);
-            if (p) {
-                const poc = p.poches.find(x => x.id === pocId);
-                if (poc) {
-                    poc.investissements.push({ id: Date.now(), nom: "iShares MSCI World Swap PEA", pct: 0, rendement: 12.8 });
-                    renderPhases();
-                }
-            }
-        }
-
-        function supprimerActif(pId, pocId, invId) { 
-            const p = phases.find(x => x.id === pId);
-            if (p) {
-                const poc = p.poches.find(x => x.id === pocId);
-                if (poc) {
-                    poc.investissements = poc.investissements.filter(x => x.id !== invId);
-                    renderPhases(); handleParamChange();
-                }
-            }
-        }
+        function supprimerPhase(id) { if(phases.length > 1) { phases = phases.filter(x=>x.id!==id); renderPhases(); handleParamChange(); } }
+        function ajouterActif(pid, pocid) { phases.find(x=>x.id===pid).poches.find(x=>x.id===pocid).investissements.push({id:Date.now(), nom:"iShares MSCI World Swap PEA", pct:0, rendement:12.8}); renderPhases(); }
+        function ajouterActifGlobal(pid) { phases.find(x=>x.id===pid).listeGlobale.push({id:Date.now(), nom:"iShares MSCI World Swap PEA", pct:0, rendement:12.8}); renderPhases(); }
+        function supprimerActif(pid, pocid, iid) { const poc = phases.find(x=>x.id===pid).poches.find(x=>x.id===pocid); poc.investissements = poc.investissements.filter(x=>x.id!==iid); renderPhases(); handleParamChange(); }
+        function supprimerActifGlobal(pid, iid) { const p = phases.find(x=>x.id===pid); p.listeGlobale = p.listeGlobale.filter(x=>x.id!==iid); renderPhases(); handleParamChange(); }
 
         function toggleTab(tab) {
             document.getElementById('view-main').classList.toggle('hidden', tab !== 'main');
@@ -564,83 +602,69 @@
             handleParamChange(); 
         }
 
+        // --- CŒUR DE CALCUL ---
         function calculer() {
             let ageAct = parseNum(document.getElementById('ageActuel').value);
             let capIni = parseNum(document.getElementById('capitalInitial').value);
             let totalInvesti = capIni;
             
             let actifsFinaux = [];
-            allocationInitiale.poches.forEach(poc => {
-                const bP = capIni * (parseNum(poc.pct)/100);
-                poc.investissements.forEach(inv => {
-                    const vInv = bP * (parseNum(inv.pct)/100);
-                    let ex = actifsFinaux.find(x => x.nom === inv.nom);
-                    if (ex) { ex.valeur += vInv; }
-                    else { actifsFinaux.push({ nom: inv.nom, valeur: vInv, rendement: inv.rendement }); }
-                });
+
+            // 1. Placement initial
+            const setupInitial = allocationInitiale.mode === "detail" ? 
+                allocationInitiale.poches.flatMap(p => p.investissements.map(i => ({...i, pct: (parseNum(p.pct)/100)*(parseNum(i.pct)/100)}))) :
+                allocationInitiale.listeGlobale.map(i => ({...i, pct: parseNum(i.pct)/100}));
+
+            setupInitial.forEach(item => {
+                const val = capIni * item.pct;
+                let ex = actifsFinaux.find(x => x.nom === item.nom);
+                if(ex) ex.valeur += val;
+                else actifsFinaux.push({ nom: item.nom, valeur: val, rendement: item.rendement });
             });
 
             let dataPoints = [{ age: ageAct, cap: capIni, inv: capIni }];
-            let ageCourant = ageAct;
             let moisTotalEcoule = 0;
 
             phases.forEach(p => {
-                const dureeVal = parseNum(p.duree);
-                const unite = p.uniteDuree || "ans";
-                const totalMoisPhase = unite === "ans" ? dureeVal * 12 : dureeVal;
-                
-                const b = parseNum(p.budget);
+                const dureeMois = (p.uniteDuree === "ans" ? parseNum(p.duree)*12 : parseNum(p.duree));
                 const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
-                
-                for (let mPhase = 1; mPhase <= totalMoisPhase; mPhase++) {
+                const budget = parseNum(p.budget);
+
+                // Extraction de la stratégie de versement de la phase
+                const setupPhase = p.mode === "detail" ?
+                    p.poches.flatMap(poc => poc.investissements.map(i => ({...i, pct: (parseNum(poc.pct)/100)*(parseNum(i.pct)/100)}))) :
+                    p.listeGlobale.map(i => ({...i, pct: parseNum(i.pct)/100}));
+
+                for (let m = 1; m <= dureeMois; m++) {
                     moisTotalEcoule++;
                     
-                    // 1. Croissance mensuelle
+                    // Croissance
                     actifsFinaux.forEach(ac => {
-                        const rMensuel = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
-                        ac.valeur *= (1 + rMensuel);
+                        const rMens = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
+                        ac.valeur *= (1 + rMens);
                     });
 
-                    // 2. Logique de versement
-                    if (freq.id === "ponctuel") {
-                        // Uniquement au TOUT PREMIER MOIS de la phase
-                        if (mPhase === 1) {
-                            p.poches.forEach(poc => {
-                                const bP = b * (parseNum(poc.pct)/100);
-                                poc.investissements.forEach(inv => {
-                                    const vA = (bP * (parseNum(inv.pct)/100));
-                                    totalInvesti += vA;
-                                    let ex = actifsFinaux.find(x => x.nom === inv.nom);
-                                    if (ex) { ex.valeur += vA; ex.rendement = inv.rendement; }
-                                    else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
-                                });
-                            });
-                        }
-                    } else if ((mPhase - 1) % freq.div === 0) {
-                        // Logique périodique classique
-                        p.poches.forEach(poc => {
-                            const bP = b * (parseNum(poc.pct)/100);
-                            poc.investissements.forEach(inv => {
-                                const vA = (bP * (parseNum(inv.pct)/100));
-                                totalInvesti += vA;
-                                let ex = actifsFinaux.find(x => x.nom === inv.nom);
-                                if (ex) { ex.valeur += vA; ex.rendement = inv.rendement; }
-                                else { actifsFinaux.push({ nom: inv.nom, valeur: vA, rendement: inv.rendement }); }
-                            });
+                    // Versement
+                    let versementMois = false;
+                    if(freq.id === "ponctuel") versementMois = (m === 1);
+                    else versementMois = ((m - 1) % freq.div === 0);
+
+                    if(versementMois) {
+                        setupPhase.forEach(item => {
+                            const val = budget * item.pct;
+                            totalInvesti += val;
+                            let ex = actifsFinaux.find(x => x.nom === item.nom);
+                            if(ex) { ex.valeur += val; ex.rendement = item.rendement; }
+                            else { actifsFinaux.push({ nom: item.nom, valeur: val, rendement: item.rendement }); }
                         });
                     }
 
-                    // Enregistrement des points
-                    if (moisTotalEcoule % 12 === 0 || (p === phases[phases.length - 1] && mPhase === totalMoisPhase)) {
+                    // Snapshot annuel
+                    if (moisTotalEcoule % 12 === 0 || m === dureeMois) {
                         let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
                         let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
                         let agePoint = ageAct + Math.floor(moisTotalEcoule / 12);
-                        if (!dataPoints.find(dp => dp.age === agePoint)) {
-                            dataPoints.push({ age: agePoint, cap: tB - tx, inv: totalInvesti });
-                        } else {
-                            const idx = dataPoints.findIndex(dp => dp.age === agePoint);
-                            dataPoints[idx] = { age: agePoint, cap: tB - tx, inv: totalInvesti };
-                        }
+                        dataPoints.push({ age: agePoint, cap: tB - tx, inv: totalInvesti });
                     }
                 }
             });
@@ -656,7 +680,7 @@
             document.getElementById('bilanGain').innerText = formatEuros(capFinalNet - totalInvesti);
             document.getElementById('bilanMult').innerText = "x" + (totalInvesti > 0 ? (capFinalNet / totalInvesti).toFixed(2) : "0");
             document.getElementById('bilanPart').innerText = (capFinalNet > 0 ? (((capFinalNet - totalInvesti) / capFinalNet) * 100).toFixed(0) : "0") + "%";
-            document.getElementById('bilanAge').innerText = (ageAct + Math.floor(moisTotalEcoule/12)) + " ans" + (moisTotalEcoule%12 > 0 ? ` et ${moisTotalEcoule%12}m` : "");
+            document.getElementById('bilanAge').innerText = (ageAct + Math.floor(moisTotalEcoule/12)) + " ans";
             
             updateCharts(dataPoints, actifsFinaux);
         }
@@ -672,26 +696,14 @@
                 data: {
                     labels: data.map(d => d.age),
                     datasets: [
-                        { label: 'Capital Total', data: data.map(d => d.cap), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+                        { label: 'Capital Net', data: data.map(d => d.cap), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.3, pointRadius: 0 },
                         { label: 'Total Investi', data: data.map(d => d.inv), borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.1, pointRadius: 0 }
                     ]
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { 
-                            enabled: true, 
-                            intersect: false, 
-                            mode: 'index',
-                            callbacks: { label: (c) => c.dataset.label + ': ' + formatEuros(c.parsed.y) }
-                        }
-                    }, 
-                    scales: { 
-                        y: { ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } }, 
-                        x: { ticks: { font: { size: 9 } } } 
-                    } 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false }, tooltip: { intersect: false, mode: 'index' } },
+                    scales: { y: { ticks: { font: { size: 9 }, callback: (v) => v >= 1000 ? (v/1000)+'k€' : v+'€' } }, x: { ticks: { font: { size: 9 } } } }
                 }
             });
 
@@ -704,99 +716,59 @@
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false, cutout: '65%', 
-                    plugins: { 
-                        legend: { position: 'bottom', labels: { font: { size: 9, weight: 'bold' }, boxWidth: 10, usePointStyle: true } } 
-                    } 
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 9, weight: 'bold' }, boxWidth: 10, usePointStyle: true } } } 
                 }
             });
         }
 
+        // --- EXPORT / IMPORT ---
         function copierRapport() {
-            const ageAct = document.getElementById('ageActuel').value;
-            const capIni = document.getElementById('capitalInitial').value;
-            const totalF = document.getElementById('totalFinal').innerText;
-            const investi = document.getElementById('bilanInvesti').innerText;
-            const gain = document.getElementById('bilanGain').innerText;
-            const ageFin = document.getElementById('bilanAge').innerText;
-
-            let texte = `📊 RAPPORT DE STRATÉGIE PEA\n`;
-            texte += `-----------------------------------\n`;
-            texte += `Départ : ${ageAct} ans | Capital Initial : ${formatEuros(capIni)}\n\n`;
-            
-            phases.forEach((p, i) => {
-                const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
-                const unit = UNITES_DUREE.find(u => u.id === (p.uniteDuree || "ans"));
-                texte += `PHASE ${i+1} : ${p.nom}\n`;
-                texte += `- Durée : ${p.duree} ${unit.label}\n`;
-                texte += `- Versement : ${formatEuros(p.budget)} ${freq.label}\n\n`;
-            });
-
-            texte += `-----------------------------------\n`;
-            texte += `BILAN FINAL (Mode ${modeNet ? 'NET' : 'BRUT'})\n`;
-            texte += `Capital projeté : ${totalF}\n`;
-            texte += `Total versé : ${investi}\n`;
-            texte += `Gain réel : ${gain}\n`;
-            texte += `Âge atteint : ${ageFin}\n`;
-
-            const el = document.createElement('textarea');
-            el.value = texte;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
+            let texte = `📊 RAPPORT DE STRATÉGIE PEA\n-----------------------------------\n`;
+            texte += `Capital Final : ${document.getElementById('totalFinal').innerText}\n`;
+            texte += `Total Investi : ${document.getElementById('bilanInvesti').innerText}\n`;
+            texte += `Gain Net : ${document.getElementById('bilanGain').innerText}\n`;
+            const el = document.createElement('textarea'); el.value = texte; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
             showToast("✅ Rapport copié !");
         }
 
         function showToast(msg) {
             const toast = document.createElement('div');
             toast.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold text-[11px] shadow-2xl z-[1000] animate-bounce";
-            toast.innerText = msg;
-            document.body.appendChild(toast);
+            toast.innerText = msg; document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
 
-        async function exportToFile() {
+        function exportToFile() {
             const config = { age: document.getElementById('ageActuel').value, capital: document.getElementById('capitalInitial').value, allocationInitiale, phases, modeNet };
-            const json = JSON.stringify(config, null, 2);
-            const blob = new Blob([json], { type: "application/json" });
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = "strategie_pea.json";
-            document.body.appendChild(a); a.click();
-            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
-            showToast("📥 Fichier exporté");
+            const a = document.createElement('a'); a.href = url; a.download = "strategie_pea.json"; a.click();
         }
 
         function importFromFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                try {
-                    const config = JSON.parse(e.target.result);
-                    document.getElementById('ageActuel').value = config.age;
-                    document.getElementById('capitalInitial').value = config.capital;
-                    allocationInitiale = config.allocationInitiale || allocationInitiale;
-                    phases = config.phases;
-                    setMode(config.modeNet || false);
-                    renderAllocationInitiale(); renderPhases(); calculer();
-                    toggleTab('main'); showToast("✅ Stratégie chargée !");
-                } catch (err) { showToast("❌ Fichier corrompu"); }
+                const config = JSON.parse(e.target.result);
+                document.getElementById('ageActuel').value = config.age;
+                document.getElementById('capitalInitial').value = config.capital;
+                allocationInitiale = config.allocationInitiale;
+                phases = config.phases;
+                setMode(config.modeNet);
+                renderAllocationInitiale(); renderPhases(); calculer();
+                toggleTab('main');
             };
-            reader.readAsText(file);
+            reader.readAsText(event.target.files[0]);
         }
 
-        function resetConfiguration() { 
-            if(confirm("Effacer tout ?")) { localStorage.removeItem('pea_v13_store'); location.reload(); } 
-        }
+        function resetConfiguration() { if(confirm("Effacer tout ?")) { localStorage.removeItem('pea_v14_store'); location.reload(); } }
 
         window.onload = () => {
-            const saved = localStorage.getItem('pea_v13_store');
+            const saved = localStorage.getItem('pea_v14_store');
             if (saved) {
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;
                 document.getElementById('capitalInitial').value = config.capital;
-                allocationInitiale = config.allocationInitiale || allocationInitiale;
+                allocationInitiale = config.allocationInitiale;
                 phases = config.phases;
                 setMode(config.modeNet || false);
             }

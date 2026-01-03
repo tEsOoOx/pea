@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Stratège PEA Pro - Clonage Intelligent</title>
+    <title>Stratège PEA Pro - Rapport Complet</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -144,11 +144,11 @@
         <div class="flex flex-wrap gap-3 mb-6">
             <button onclick="copierRapport()" class="btn-action bg-emerald-600 text-white hover:bg-emerald-700 shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
-                COPIER LE RAPPORT
+                COPIER LE RAPPORT DÉTAILLÉ
             </button>
             <button onclick="exportToFile()" class="btn-action bg-slate-800 text-white hover:bg-slate-900 shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                ENREGISTRER SOUS...
+                ENREGISTRER FICHIER
             </button>
         </div>
 
@@ -166,7 +166,6 @@
 
         <div id="view-main" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-7 space-y-6">
-                
                 <div class="card p-5 grid grid-cols-2 gap-4 border-l-4 border-slate-900">
                     <div class="space-y-1 text-center">
                         <label class="stat-label">Âge actuel</label>
@@ -183,7 +182,7 @@
 
                 <button onclick="ajouterPhase()" class="w-full py-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-[11px] border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition-all tracking-widest flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
-                    AJOUTER UNE PHASE (CLONE LA PRÉCÉDENTE)
+                    AJOUTER UNE PHASE (CLONE)
                 </button>
 
                 <div class="card p-5 bg-white border-t-4 border-slate-900 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
@@ -293,14 +292,13 @@
                     phases: phases,
                     modeNet: modeNet
                 };
-                localStorage.setItem('pea_v14_store', JSON.stringify(config));
+                localStorage.setItem('pea_v15_store', JSON.stringify(config));
                 if (el) el.classList.remove('visible');
             }, 1000);
         }
 
         function updateLiveAmounts() {
             const capIni = parseNum(document.getElementById('capitalInitial').value);
-            
             if(allocationInitiale.mode === "detail") {
                 allocationInitiale.poches.forEach(poc => {
                     const bP = capIni * (parseNum(poc.pct)/100);
@@ -343,12 +341,10 @@
             });
         }
 
-        // --- ALLOCATION INITIALE ---
         function renderAllocationInitiale() {
             const cont = document.getElementById('allocationInitialeConteneur');
             const capIni = parseNum(document.getElementById('capitalInitial').value);
             const mode = allocationInitiale.mode;
-            
             cont.innerHTML = `
             <div class="card overflow-hidden border-t-4 border-emerald-500 bg-emerald-50/10">
                 <div class="p-3 bg-emerald-50/50 border-b border-emerald-100 flex justify-between items-center px-4">
@@ -361,16 +357,14 @@
                 <div class="p-4">
                     ${mode === 'detail' ? renderInitDetail(capIni) : renderInitGlobal(capIni)}
                 </div>
-            </div>
-            `;
+            </div>`;
         }
 
         function renderInitDetail(capIni) {
             return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${allocationInitiale.poches.map(poc => {
                     const bP = capIni * (parseNum(poc.pct)/100);
-                    return `
-                    <div class="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm">
+                    return `<div class="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm">
                         <div class="flex justify-between items-center mb-3">
                             <input type="text" value="${poc.nom}" oninput="updateInitPocheData(${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
                             <div class="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
@@ -391,18 +385,16 @@
         function renderInitGlobal(capIni) {
             return `<div class="bg-white rounded-xl p-4 border border-emerald-100 shadow-sm space-y-2">
                 ${allocationInitiale.listeGlobale.map(inv => renderItem(inv, null, 'init-global', capIni)).join('')}
-                <button onclick="ajouterInitActifGlobal()" class="w-full py-2 border border-dashed border-emerald-200 rounded text-[9px] font-bold text-emerald-400">+ AJOUTER UN ACTIF À LA LISTE</button>
+                <button onclick="ajouterInitActifGlobal()" class="w-full py-2 border border-dashed border-emerald-200 rounded text-[9px] font-bold text-emerald-400">+ ACTIF</button>
             </div>`;
         }
 
-        // --- PHASES ---
         function renderPhases() {
             const cont = document.getElementById('phasesConteneur');
             cont.innerHTML = phases.map(p => {
                 const budget = parseNum(p.budget);
                 const mode = p.mode || "detail";
-                return `
-                <div class="card overflow-hidden border-t-4 border-indigo-500 relative">
+                return `<div class="card overflow-hidden border-t-4 border-indigo-500 relative">
                     <button onclick="supprimerPhase(${p.id})" class="absolute top-3 right-3 text-slate-300 font-bold hover:text-red-400">×</button>
                     <div class="p-3 bg-slate-50 border-b border-slate-100 flex flex-wrap justify-between items-center px-4 gap-3">
                         <div class="flex gap-3">
@@ -429,9 +421,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="p-4">
-                        ${mode === 'detail' ? renderPhaseDetail(p, budget) : renderPhaseGlobal(p, budget)}
-                    </div>
+                    <div class="p-4">${mode === 'detail' ? renderPhaseDetail(p, budget) : renderPhaseGlobal(p, budget)}</div>
                 </div>`;
             }).join('');
         }
@@ -440,8 +430,7 @@
             return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${p.poches.map(poc => {
                     const bP = budget * (parseNum(poc.pct)/100);
-                    return `
-                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    return `<div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
                         <div class="flex justify-between items-center mb-3">
                             <input type="text" value="${poc.nom}" oninput="updatePocheData(${p.id}, ${poc.id}, 'nom', this.value)" class="bg-transparent font-bold text-slate-600 text-xs outline-none w-1/2">
                             <div class="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
@@ -462,7 +451,7 @@
         function renderPhaseGlobal(p, budget) {
             return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
                 ${p.listeGlobale.map(inv => renderItem(inv, null, 'phase-global', budget, p.id)).join('')}
-                <button onclick="ajouterActifGlobal(${p.id})" class="w-full py-2 border border-dashed border-slate-300 rounded text-[9px] font-bold text-slate-500">+ AJOUTER UN ACTIF À LA LISTE GLOBALE</button>
+                <button onclick="ajouterActifGlobal(${p.id})" class="w-full py-2 border border-dashed border-slate-300 rounded text-[9px] font-bold text-slate-500">+ ACTIF</button>
             </div>`;
         }
 
@@ -498,8 +487,7 @@
                 onDel = `supprimerActifGlobal(${phaseId}, ${inv.id})`;
             }
 
-            return `
-            <div class="${bgClass} p-2 rounded-lg border border-slate-100 space-y-1.5 shadow-sm">
+            return `<div class="${bgClass} p-2 rounded-lg border border-slate-100 space-y-1.5 shadow-sm">
                 <div class="flex justify-between">
                     <select onchange="${onChangeName}" class="custom-select text-[9px] font-bold outline-none flex-grow bg-transparent">
                         ${LISTE_ACTIFS.map(a => `<option value="${a.nom}" ${inv.nom === a.nom ? 'selected' : ''}>${a.nom}</option>`).join('')}
@@ -521,14 +509,9 @@
             </div>`;
         }
 
-        // --- GESTION DES MODES ---
         function setInitMode(m) { allocationInitiale.mode = m; renderAllocationInitiale(); handleParamChange(); }
-        function setPhaseMode(pid, m) { 
-            const p = phases.find(x => x.id === pid);
-            if(p) { p.mode = m; renderPhases(); handleParamChange(); }
-        }
+        function setPhaseMode(pid, m) { const p = phases.find(x => x.id === pid); if(p) { p.mode = m; renderPhases(); handleParamChange(); } }
 
-        // --- LOGIQUE DATA INITIALE ---
         function updateInitPocheData(id, f, v) { const p = allocationInitiale.poches.find(x => x.id === id); if(p) { p[f]=v; handleParamChange(); } }
         function updateInitInvData(pid, iid, f, v) {
             const poc = allocationInitiale.poches.find(x => x.id === pid);
@@ -550,7 +533,6 @@
         function supprimerInitActif(pid, iid) { const poc = allocationInitiale.poches.find(x=>x.id===pid); poc.investissements = poc.investissements.filter(x=>x.id!==iid); renderAllocationInitiale(); handleParamChange(); }
         function supprimerInitActifGlobal(iid) { allocationInitiale.listeGlobale = allocationInitiale.listeGlobale.filter(x=>x.id!==iid); renderAllocationInitiale(); handleParamChange(); }
 
-        // --- LOGIQUE DATA PHASES & CLONAGE ---
         function updatePhaseData(id, f, v) { const p = phases.find(x=>x.id===id); if(p) { p[f]=v; handleParamChange(); } }
         function updatePocheData(pid, pocid, f, v) { const p = phases.find(x=>x.id===pid); const poc = p?.poches.find(x=>x.id===pocid); if(poc) { poc[f]=v; handleParamChange(); } }
         function updateInvData(pid, pocid, iid, f, v) {
@@ -571,19 +553,12 @@
             }
         }
 
-        // FONCTION CLONAGE CORRIGÉE
         function ajouterPhase() {
             const lastPhase = phases[phases.length - 1];
             const newId = Date.now();
-            
-            // On clone la structure de la dernière phase
             const phaseClonee = JSON.parse(JSON.stringify(lastPhase));
-            
-            // On met à jour les propriétés d'identité
             phaseClonee.id = newId;
             phaseClonee.nom = `Phase ${phases.length + 1}`;
-            
-            // On regenère des IDs uniques pour les éléments imbriqués du clone
             if(phaseClonee.poches) {
                 phaseClonee.poches.forEach((poc, idx) => {
                     poc.id = newId + (idx * 100);
@@ -595,11 +570,9 @@
             if(phaseClonee.listeGlobale) {
                 phaseClonee.listeGlobale.forEach((inv, iidx) => inv.id = newId + 500 + iidx);
             }
-
             phases.push(phaseClonee);
-            renderPhases(); 
-            handleParamChange();
-            showToast("✨ Nouvelle phase clonée !");
+            renderPhases(); handleParamChange();
+            showToast("✨ Phase clonée avec succès !");
         }
 
         function supprimerPhase(id) { if(phases.length > 1) { phases = phases.filter(x=>x.id!==id); renderPhases(); handleParamChange(); } }
@@ -646,7 +619,6 @@
                 const dureeMois = (p.uniteDuree === "ans" ? parseNum(p.duree)*12 : parseNum(p.duree));
                 const freq = FREQUENCES.find(f => f.id === (p.frequence || "mensuel"));
                 const budget = parseNum(p.budget);
-
                 const setupPhase = p.mode === "detail" ?
                     p.poches.flatMap(poc => poc.investissements.map(i => ({...i, pct: (parseNum(poc.pct)/100)*(parseNum(i.pct)/100)}))) :
                     p.listeGlobale.map(i => ({...i, pct: parseNum(i.pct)/100}));
@@ -657,11 +629,7 @@
                         const rMens = Math.pow(1 + (parseNum(ac.rendement)/100), 1/12) - 1;
                         ac.valeur *= (1 + rMens);
                     });
-
-                    let versementMois = false;
-                    if(freq.id === "ponctuel") versementMois = (m === 1);
-                    else versementMois = ((m - 1) % freq.div === 0);
-
+                    let versementMois = (freq.id === "ponctuel") ? (m === 1) : ((m - 1) % freq.div === 0);
                     if(versementMois) {
                         setupPhase.forEach(item => {
                             const val = budget * item.pct;
@@ -671,7 +639,6 @@
                             else { actifsFinaux.push({ nom: item.nom, valeur: val, rendement: item.rendement }); }
                         });
                     }
-
                     if (moisTotalEcoule % 12 === 0 || m === dureeMois) {
                         let tB = actifsFinaux.reduce((s, x) => s + x.valeur, 0);
                         let tx = modeNet ? Math.max(0, (tB - totalInvesti) * 0.172) : 0;
@@ -692,7 +659,6 @@
             document.getElementById('bilanMult').innerText = "x" + (totalInvesti > 0 ? (capFinalNet / totalInvesti).toFixed(2) : "0");
             document.getElementById('bilanPart').innerText = (capFinalNet > 0 ? (((capFinalNet - totalInvesti) / capFinalNet) * 100).toFixed(0) : "0") + "%";
             document.getElementById('bilanAge').innerText = (ageAct + Math.floor(moisTotalEcoule/12)) + " ans";
-            
             updateCharts(dataPoints, actifsFinaux);
         }
 
@@ -719,10 +685,82 @@
             });
         }
 
+        // --- NOUVELLE FONCTION DE RAPPORT ULTRA DÉTAILLÉ ---
         function copierRapport() {
-            let texte = `📊 RAPPORT PEA\n---\nFinal: ${document.getElementById('totalFinal').innerText}\nInvesti: ${document.getElementById('bilanInvesti').innerText}\nGain: ${document.getElementById('bilanGain').innerText}`;
-            const el = document.createElement('textarea'); el.value = texte; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-            showToast("✅ Rapport copié !");
+            const age = document.getElementById('ageActuel').value;
+            const capInitial = document.getElementById('capitalInitial').value;
+            const modeFiscal = modeNet ? "NET (Après PS 17.2%)" : "BRUT (Avant PS)";
+            
+            let r = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            r += `📊 RAPPORT DE STRATÉGIE PEA PRO\n`;
+            r += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+            r += `[1] PROFIL GLOBAL\n`;
+            r += `────────────────────────────────────────────\n`;
+            r += `• Âge de départ : ${age} ans\n`;
+            r += `• Capital initial : ${formatEuros(capInitial)}\n`;
+            r += `• Régime fiscal : ${modeFiscal}\n\n`;
+
+            r += `[2] ALLOCATION INITIALE (${allocationInitiale.mode.toUpperCase()})\n`;
+            r += `────────────────────────────────────────────\n`;
+            if(allocationInitiale.mode === "detail") {
+                allocationInitiale.poches.forEach(p => {
+                    r += `📂 Poche : ${p.nom} (${p.pct}%)\n`;
+                    p.investissements.forEach(i => {
+                        const valEur = capInitial * (p.pct/100) * (i.pct/100);
+                        r += `  └─ ${i.nom} : ${i.pct}% (${formatEuros(valEur)}) | Taux: ${i.rendement}%\n`;
+                    });
+                });
+            } else {
+                allocationInitiale.listeGlobale.forEach(i => {
+                    const valEur = capInitial * (i.pct/100);
+                    r += `• ${i.nom} : ${i.pct}% (${formatEuros(valEur)}) | Taux: ${i.rendement}%\n`;
+                });
+            }
+            r += `\n`;
+
+            r += `[3] PHASES D'INVESTISSEMENT\n`;
+            r += `────────────────────────────────────────────\n`;
+            phases.forEach((p, idx) => {
+                const freqLabel = FREQUENCES.find(f => f.id === p.frequence)?.label || "";
+                r += `🔹 PHASE ${idx+1} : ${p.nom}\n`;
+                r += `   Durée : ${p.duree} ${p.uniteDuree}\n`;
+                r += `   Budget : ${formatEuros(p.budget)} ${freqLabel}\n`;
+                r += `   Mode : ${p.mode.toUpperCase()}\n`;
+                
+                if(p.mode === "detail") {
+                    p.poches.forEach(poc => {
+                        r += `   ├─ 📂 ${poc.nom} (${poc.pct}%)\n`;
+                        poc.investissements.forEach(inv => {
+                            r += `   │  └─ ${inv.nom} : ${inv.pct}% | Taux: ${inv.rendement}%\n`;
+                        });
+                    });
+                } else {
+                    p.listeGlobale.forEach(inv => {
+                        r += `   ├─ • ${inv.nom} : ${inv.pct}% | Taux: ${inv.rendement}%\n`;
+                    });
+                }
+                r += `\n`;
+            });
+
+            r += `[4] RÉSULTATS & PROJECTION FINALE\n`;
+            r += `────────────────────────────────────────────\n`;
+            r += `• TOTAL INVESTI : ${document.getElementById('bilanInvesti').innerText}\n`;
+            r += `• CAPITAL FINAL : ${document.getElementById('bilanCapital').innerText}\n`;
+            r += `• PLUS-VALUE    : ${document.getElementById('bilanGain').innerText}\n`;
+            r += `• MULTIPLICATEUR: ${document.getElementById('bilanMult').innerText}\n`;
+            r += `• PART INTÉRÊTS : ${document.getElementById('bilanPart').innerText}\n`;
+            r += `• ÂGE FINAL     : ${document.getElementById('bilanAge').innerText}\n\n`;
+            r += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            r += `Généré le ${new Date().toLocaleDateString('fr-FR')} par Stratège PEA Pro`;
+
+            const el = document.createElement('textarea'); 
+            el.value = r; 
+            document.body.appendChild(el); 
+            el.select(); 
+            document.execCommand('copy'); 
+            document.body.removeChild(el);
+            showToast("✅ Rapport ultra-détaillé copié !");
         }
 
         function showToast(msg) {
@@ -751,10 +789,10 @@
             reader.readAsText(event.target.files[0]);
         }
 
-        function resetConfiguration() { if(confirm("Effacer tout ?")) { localStorage.removeItem('pea_v14_store'); location.reload(); } }
+        function resetConfiguration() { if(confirm("Effacer tout ?")) { localStorage.removeItem('pea_v15_store'); location.reload(); } }
 
         window.onload = () => {
-            const saved = localStorage.getItem('pea_v14_store');
+            const saved = localStorage.getItem('pea_v15_store');
             if (saved) {
                 const config = JSON.parse(saved);
                 document.getElementById('ageActuel').value = config.age;
